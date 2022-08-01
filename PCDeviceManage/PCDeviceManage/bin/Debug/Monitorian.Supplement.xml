@@ -1,0 +1,127 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Monitorian.Supplement</name>
+    </assembly>
+    <members>
+        <member name="T:Monitorian.Supplement.DisplayInformation">
+            <summary>
+            A wrapper class of <see cref="T:Windows.Devices.Display.DisplayMonitor"/>
+            </summary>
+            <remarks>
+            <see cref="T:Windows.Devices.Display.DisplayMonitor"/> is only available
+            on Windows 10 (version 10.0.17134.0) or newer.
+            </remarks>
+        </member>
+        <member name="T:Monitorian.Supplement.DisplayInformation.DisplayItem">
+            <summary>
+            Display monitor information
+            </summary>
+        </member>
+        <member name="P:Monitorian.Supplement.DisplayInformation.DisplayItem.DeviceInstanceId">
+            <summary>
+            Device ID (Not device interface ID)
+            </summary>
+        </member>
+        <member name="P:Monitorian.Supplement.DisplayInformation.DisplayItem.DisplayName">
+            <summary>
+            Display name
+            </summary>
+        </member>
+        <member name="P:Monitorian.Supplement.DisplayInformation.DisplayItem.IsInternal">
+            <summary>
+            Whether the display is connected internally
+            </summary>
+        </member>
+        <member name="P:Monitorian.Supplement.DisplayInformation.DisplayItem.ConnectionDescription">
+            <summary>
+            Connection description
+            </summary>
+        </member>
+        <member name="P:Monitorian.Supplement.DisplayInformation.DisplayItem.PhysicalSize">
+            <summary>
+            Physical size (diagonal) in inches
+            </summary>
+        </member>
+        <member name="M:Monitorian.Supplement.DisplayInformation.GetDisplayMonitorsAsync">
+            <summary>
+            Gets display monitor information.
+            </summary>
+            <returns>Array of display monitor information</returns>
+        </member>
+        <member name="T:Monitorian.Supplement.Launcher">
+            <summary>
+            A wrapper class of <see cref="T:Windows.System.Launcher"/>
+            </summary>
+        </member>
+        <member name="M:Monitorian.Supplement.Launcher.LaunchAsync(System.Uri)">
+            <summary>
+            Launches the default app associated with the URI scheme name for a specified URI.
+            </summary>
+            <param name="uri">Uri</param>
+            <returns>True if successfully launches</returns>
+        </member>
+        <member name="T:Monitorian.Supplement.LightInformation">
+            <summary>
+            A wrapper class of <see cref="T:Windows.Devices.Sensors.LightSensor"/>
+            </summary>
+            <remarks>
+            <see cref="T:Windows.Devices.Sensors.LightSensor"/> has been available
+            since Windows 8.1 but is officially supported on Windows 10 (version 10.0.10240.0) or newer.
+            </remarks>
+        </member>
+        <member name="M:Monitorian.Supplement.LightInformation.AmbientLightSensorExists">
+            <summary>
+            Determines whether an integrated ambient light sensor exists.
+            </summary>
+            <returns>True if exists</returns>
+        </member>
+        <member name="M:Monitorian.Supplement.LightInformation.TryGetAmbientLight(System.Single@)">
+            <summary>
+            Attempts to get ambient light illuminance.
+            </summary>
+            <param name="illuminance">Illuminance in lux</param>
+            <returns>True if successfully gets</returns>
+        </member>
+        <member name="P:Monitorian.Supplement.LightInformation.ReportInterval">
+            <summary>
+            Report interval for ambient light sensor
+            </summary>
+        </member>
+        <member name="E:Monitorian.Supplement.LightInformation.AmbientLightChanged">
+            <summary>
+            Occurs when ambient light illuminance has changed
+            </summary>
+            <remarks>EventArgs indicates illuminance in lux.</remarks>
+        </member>
+        <member name="T:Monitorian.Supplement.UIInformation">
+            <summary>
+            A wrapper class of <see cref="T:Windows.UI.ViewManagement.UISettings"/>
+            </summary>
+            <remarks>
+            <see cref="T:Windows.UI.ViewManagement.UISettings"/> is available
+            on Windows 10 (version 10.0.10240.0) or newer.
+            </remarks>
+        </member>
+        <member name="M:Monitorian.Supplement.UIInformation.GetAccentColor">
+            <summary>
+            Gets the system accent color.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Monitorian.Supplement.UIInformation.GetBackgroundColor">
+            <summary>
+            Gets the system background color.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="E:Monitorian.Supplement.UIInformation.ColorsChanged">
+            <summary>
+            Occurs when colors have changed.
+            </summary>
+            <remarks>
+            UISettings.ColorValuesChanged event seems not to fire when this assembly is packaged.
+            </remarks>
+        </member>
+    </members>
+</doc>

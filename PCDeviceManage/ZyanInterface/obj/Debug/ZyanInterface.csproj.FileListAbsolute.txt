@@ -1,0 +1,6 @@
+D:\yuanx\C#\PCDeviceManage\ZyanInterface\bin\Debug\ZyanInterface.dll
+D:\yuanx\C#\PCDeviceManage\ZyanInterface\bin\Debug\ZyanInterface.pdb
+D:\yuanx\C#\PCDeviceManage\ZyanInterface\obj\Debug\ZyanInterface.csproj.CoreCompileInputs.cache
+D:\yuanx\C#\PCDeviceManage\ZyanInterface\obj\Debug\ZyanInterface.dll
+D:\yuanx\C#\PCDeviceManage\ZyanInterface\obj\Debug\ZyanInterface.pdb
+D:\yuanx\C#\PCDeviceManage\ZyanInterface\obj\Debug\ZyanInterface.csproj.AssemblyReference.cache

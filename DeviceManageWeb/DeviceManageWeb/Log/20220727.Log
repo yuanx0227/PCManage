@@ -1,0 +1,2 @@
+﻿--------------------------------------------------【Header】--------------------------------------------------
+2022-07-27 12:00:29,791 INFO  [(null)-5] HomeController  锁屏指令发送成功，客户端IP：{"IsSuccess":true,"Message":"::1"} Mac：{"IsSuccess":true,"Message":"BE-09-1B-26-37-E3"}  D:\yuanx\C#\DeviceManageWeb\DeviceManageWeb\Controllers\HomeController.cs(159行)

@@ -1,0 +1,19 @@
+﻿--------------------------------------------------【Header】--------------------------------------------------
+2022-07-23 10:42:35,630 WARN  [28288-1] Program.Main  开放Zyan端口15092成功  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Program.cs(102行)
+2022-07-23 10:42:35,894 INFO  [28288-6] DisplayInfo  DisplayInformation.GetDisplayMonitorsAsync() 获取到设备数量：2  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Monitor\DisplayInfo.cs(63行)
+2022-07-23 10:42:36,022 INFO  [28288-6] DisplayInfo  [{"DeviceInstanceId":"DISPLAY\\MSI3CA3\\5&14475071&0&UID4356","DisplayName":"MSI PAG271CQR","IsInternal":false,"ConnectionDescription":"HDMI","PhysicalSize":26.9708023},{"DeviceInstanceId":"DISPLAY\\CSO1609\\5&14475071&0&UID4357","DisplayName":"","IsInternal":true,"ConnectionDescription":"Internal","PhysicalSize":16.0043125}]  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Monitor\DisplayInfo.cs(65行)
+2022-07-23 10:42:36,023 INFO  [28288-6] DisplayInfoGet   DisplayInfo.GetDisplayMonitorsAsync()获取到显示器数量：2  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Monitor\DisplayInfoGet.cs(48行)
+2022-07-23 10:42:36,033 INFO  [28288-6] DisplayContext  EnumerateDevices() 开始获取显示器枚举信息  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Monitor\DisplayContext.cs(73行)
+2022-07-23 10:42:36,037 INFO  [28288-6] DisplayContext  EnumDisplayDevices() 获取到设备枚举信息 displayName:\\.\DISPLAY1  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Monitor\DisplayContext.cs(77行)
+2022-07-23 10:42:36,038 INFO  [28288-6] DisplayContext  TryGetDisplayIndex() 获取到设备序号 displayIndex:1  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Monitor\DisplayContext.cs(85行)
+2022-07-23 10:42:36,040 INFO  [28288-6] DisplayContext  EnumDisplayDevices() 获取到设备枚举信息 displayName:\\.\DISPLAY2  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Monitor\DisplayContext.cs(77行)
+2022-07-23 10:42:36,040 INFO  [28288-6] DisplayContext  TryGetDisplayIndex() 获取到设备序号 displayIndex:2  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Monitor\DisplayContext.cs(85行)
+2022-07-23 10:42:36,041 INFO  [28288-6] DisplayContext  EnumDisplayDevices() 获取到设备枚举信息 displayName:\\.\DISPLAY3  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Monitor\DisplayContext.cs(77行)
+2022-07-23 10:42:36,042 INFO  [28288-6] DisplayContext  TryGetDisplayIndex() 获取到设备序号 displayIndex:3  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Monitor\DisplayContext.cs(85行)
+2022-07-23 10:42:36,043 INFO  [28288-6] DisplayContext  EnumDisplayDevices() 获取到设备枚举信息 displayName:\\.\DISPLAY4  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Monitor\DisplayContext.cs(77行)
+2022-07-23 10:42:36,043 INFO  [28288-6] DisplayContext  TryGetDisplayIndex() 获取到设备序号 displayIndex:4  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Monitor\DisplayContext.cs(85行)
+2022-07-23 10:42:36,047 INFO  [28288-6] DisplayInfoGet  [{"DeviceInstanceId":"DISPLAY\\MSI3CA3\\5&14475071&0&UID4356","Description":"Generic PnP Monitor","DisplayIndex":1,"MonitorIndex":0}]  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Monitor\DisplayInfoGet.cs(52行)
+2022-07-23 10:42:36,049 INFO  [28288-6] DisplayInfoGet  GetDisplayList()获取到显示器数量：1  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Monitor\DisplayInfoGet.cs(89行)
+
+--------------------------------------------------【Footer】--------------------------------------------------
+

@@ -1,0 +1,9 @@
+D:\yuanx\C#\Monitorian-master\Source\Monitorian.Supplement\bin\Debug\Monitorian.Supplement.xml
+D:\yuanx\C#\Monitorian-master\Source\Monitorian.Supplement\bin\Debug\Monitorian.Supplement.dll
+D:\yuanx\C#\Monitorian-master\Source\Monitorian.Supplement\bin\Debug\Monitorian.Supplement.pdb
+D:\yuanx\C#\Monitorian-master\Source\Monitorian.Supplement\bin\Debug\Windows.winmd
+D:\yuanx\C#\Monitorian-master\Source\Monitorian.Supplement\obj\Debug\Supplement.csproj.AssemblyReference.cache
+D:\yuanx\C#\Monitorian-master\Source\Monitorian.Supplement\obj\Debug\Supplement.csproj.CoreCompileInputs.cache
+D:\yuanx\C#\Monitorian-master\Source\Monitorian.Supplement\obj\Debug\Supplement.csproj.CopyComplete
+D:\yuanx\C#\Monitorian-master\Source\Monitorian.Supplement\obj\Debug\Monitorian.Supplement.dll
+D:\yuanx\C#\Monitorian-master\Source\Monitorian.Supplement\obj\Debug\Monitorian.Supplement.pdb

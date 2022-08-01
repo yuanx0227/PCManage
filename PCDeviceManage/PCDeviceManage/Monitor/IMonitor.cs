@@ -1,0 +1,55 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace PCDeviceManage
+{
+   public interface IMonitor : IDisposable
+    {
+		string DeviceInstanceId { get; }
+		string Description { get; }
+		byte DisplayIndex { get; }
+		byte MonitorIndex { get; }
+		//Rect MonitorRect { get; }
+		bool IsReachable { get; }
+		bool IsBrightnessSupported { get; }
+		bool IsContrastSupported { get; }
+
+		int Brightness { get; }
+		int BrightnessSystemAdjusted { get; }
+
+		AccessResult UpdateBrightness(int brightness = -1);
+		AccessResult SetBrightness(int brightness);
+
+		int Contrast { get; }
+
+		AccessResult UpdateContrast();
+		AccessResult SetContrast(int contrast);
+
+
+    }
+
+	public enum AccessStatus
+	{
+		None = 0,
+		Succeeded,
+		Failed,
+		DdcFailed,
+		TransmissionFailed,
+		NoLongerExist,
+		NotSupported
+	}
+
+	public class AccessResult
+	{
+		public AccessStatus Status { get; }
+		public string Message { get; }
+
+		public AccessResult(AccessStatus status, string message) => (this.Status, this.Message) = (status, message);
+
+		public static readonly AccessResult Succeeded = new AccessResult(AccessStatus.Succeeded, null);
+		public static readonly AccessResult Failed = new AccessResult(AccessStatus.Failed, null);
+		public static readonly AccessResult NotSupported = new AccessResult(AccessStatus.NotSupported, null);
+	}
+}

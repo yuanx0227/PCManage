@@ -1,0 +1,308 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+<style type="text/css">
+</style>
+
+<div class="jumbotron" style="text-align:center">
+    <h1 style="text-align:center">显示器亮度控制</h1>
+    <p style="text-align:center">
+
+        <div id="displayDiv1" style="display:none">
+            <p id="displayDeivceName1"></p>
+            <input id="displayIsInternal1" value="" type="hidden" />
+            <input type="range" oninput="PreBrightnessControl(1)" id="rangeBrightness1" style="margin: 0 auto">
+
+            @*<input id="inputBrightness1" name="inputBrightness1" value="0" min="0" max="100" placeholder="请输入亮度" />
+                <a onclick="PreBrightnessControl(1)" class="btn btn-primary btn-lg">亮度设置</a>*@
+        </div>
+
+        <div id="displayDiv2" style="display:none">
+            <p id="displayDeivceName2"></p>
+            <input id="displayIsInternal2" value="" type="hidden" />
+            <input type="range" oninput="PreBrightnessControl(2)" id="rangeBrightness2" style="margin: 0 auto">
+
+            @*<input id="inputBrightness2" name="inputBrightness2" value="0" min="0" max="100" placeholder="请输入亮度" />
+                <a onclick="PreBrightnessControl(2)" class="btn btn-primary btn-lg">亮度设置</a>*@
+        </div>
+
+
+</div>
+
+
+<div class="jumbotron" style="text-align:center">
+    <h1 style="text-align:center">音量控制</h1>
+    <p style="text-align:center">
+        <div>
+            <input type="range" oninput="VolumeControl()" id="rangeVolume" style="margin: 0 auto">
+            @*<input id="volumeInput" name="volumeInput" value="0" min="0" max="100" placeholder="请输入音量" />
+                <a onclick="VolumeControl()" class="btn btn-primary btn-lg">音量设置</a>*@
+        </div>
+</div>
+
+<div class="jumbotron" style="text-align:center">
+    <h1 style="text-align:center">定时关机</h1>
+    <p style="text-align:center">
+        <div>
+            <div>
+                <input type="range" oninput="ShutdownTimingControl()" value="0" id="shutdownTimingRange" style="margin: 0 auto">
+            </div>
+            &nbsp; &nbsp; &nbsp;
+            <div>
+                <input id="shutdownTimingInput" name="shutdownTimingInput" onchange="ShutdownTimingControl(this)" value="" min="1" max="10000" placeholder="请输入计时（分/可超过100）" onkeyup="this.value=/^[0-9]*\.?[0-9]{0,2}$/.test(this.value) ? this.value : this.value.substring(0,this.value.length-1)"/>
+            </div>
+            &nbsp; &nbsp; &nbsp;
+            <div>
+                <a onclick="CancelShutdown()" class="btn btn-primary btn-lg" >取消定时关机</a>
+            </div>
+            &nbsp; &nbsp; &nbsp;
+            <div>
+                <font style="text-align:center" id="shutdownTimingMessage"></font>
+            </div>
+        </div>
+</div>
+
+<div class="jumbotron" style="text-align:center">
+    <h1 style="text-align:center">系统控制</h1>
+    <p style="text-align:center">
+
+        <div>
+            <a onclick="LockWindows()" class="btn btn-primary btn-lg">锁定电脑</a>
+        </div>
+        &nbsp; &nbsp; &nbsp;
+        <div>
+            <a onclick="WindowsShutdown()" class="btn btn-primary btn-lg">立即关机</a>
+        </div>
+        &nbsp; &nbsp; &nbsp;
+        <div>
+            <a onclick="WindowsRestart()" class="btn btn-primary btn-lg">立即重启</a>
+        </div>
+
+</div>
+
+
+<script src="~/Scripts/jquery-3.4.1.min.js"></script>
+<script>
+
+
+    $(function () {
+        //加载显示器设备信息
+        $.ajax({
+            type: "POST",
+            url: "/Home/GetDisplayDeviceInfo",
+            //data: {},
+            contentType: "application/json",
+            success: function (data) {
+                $.each(JSON.parse(data), function (index, item) {
+                    $("#displayDiv" + (index + 1)).attr("style", "");
+                    $("#displayDeivceName" + (index + 1)).html(function () {
+                        return item.AlternateDescription;
+                    });
+                    $("#displayIsInternal" + (index + 1)).val(item.IsInternal);
+                    $("#rangeBrightness" + (index + 1)).val(item.Brightness);
+                });
+            }
+        });
+
+        //加载默认音频设备信息
+        $.ajax({
+            type: "POST",
+            url: "/Home/GetVolume",
+            //data: {},
+            contentType: "application/json",
+            success: function (data) {
+                $("#rangeVolume").val(data);
+            }
+        });
+
+        //加载定时关机计时
+        $.ajax({
+            type: "POST",
+            url: "/Home/GetShutdownTimingVal",
+            //data: {},
+            contentType: "application/json",
+            success: function (data) {
+                if (data > 0) {
+                    lastSecond = data % 60;
+                    shutdownTimingVal = Math.floor(data / 60);
+                    lastHour = Math.floor(shutdownTimingVal / 60);
+                    lastMinute = (shutdownTimingVal > 60 ? shutdownTimingVal % 60 : shutdownTimingVal) - 1;
+                    $("#shutdownTimingInput").val(shutdownTimingVal);
+                    $("#shutdownTimingRange").val(shutdownTimingVal);
+                }
+            }
+        });
+
+    })
+
+    function PreBrightnessControl(deviceNum) {
+        var brightness;
+        var IsInternal;
+
+        if (deviceNum == 1) {
+            brightness = $("#rangeBrightness1").val();
+            IsInternal = $("#displayIsInternal1").val();
+        } else {
+            brightness = $("#rangeBrightness2").val();
+            IsInternal = $("#displayIsInternal2").val();
+        }
+        BrightnessControl(brightness, IsInternal);
+    }
+
+    function BrightnessControl(brightness, IsInternal) {
+        console.log(brightness);
+        $.ajax({
+            type: "GET",
+            async: false,
+            url: "/Home/SetBrightness",
+            data: { brightness: brightness, IsInternal: IsInternal },
+            contentType: "application/json",
+            success: function (data) {
+
+                //alert(data);
+            }
+        });
+    }
+
+    function VolumeControl() {
+        var volume = $("#rangeVolume").val();
+        $.ajax({
+            type: "GET",
+            async: false,
+            url: "/Home/SetVolume",
+            data: { volume: volume },
+            contentType: "application/json",
+            success: function (data) {
+                //alert(data);
+            }
+        });
+    }
+
+    function LockWindows() {
+        $.ajax({
+            type: "GET",
+            url: "/Home/LockWindows",
+            data: {},
+            contentType: "application/json",
+            success: function (data) {
+                //alert(data);
+            }
+        });
+    }
+
+    function WindowsShutdown() {
+        $.ajax({
+            type: "GET",
+            url: "/Home/WindowsShutdown",
+            data: {},
+            contentType: "application/json",
+            success: function (data) {
+                //alert(data);
+            }
+        });
+    }
+
+    function WindowsRestart() {
+        $.ajax({
+            type: "GET",
+            url: "/Home/WindowsRestart",
+            data: {},
+            contentType: "application/json",
+            success: function (data) {
+                //alert(data);
+            }
+        });
+    }
+
+    //时间倒计时
+    var lastHour = 0;       //小时
+    var lastMinute = 0;    //分钟
+    var lastSecond = 0;    //秒
+    var lastInterval = setInterval(function () {
+        if (shutdownTimingVal == 0) {
+            return;
+        }
+
+        if (lastSecond > 0) {
+            lastSecond -= 1;
+        } else if (lastMinute > 0) {
+            shutdownTimingVal -= 1;
+            $("#shutdownTimingInput").val(shutdownTimingVal);
+            $("#shutdownTimingRange").val(shutdownTimingVal);
+            lastMinute -= 1;
+            lastSecond = 60;
+        } else if (lastHour > 0) {
+            lastHour -= 1;
+            lastMinute = 60;
+            lastSecond = 60;
+        }
+        if (lastHour == 0 && lastMinute == 0 && lastSecond == 0) {
+            clearInterval(lastInterval);
+            document.getElementById('shutdownTimingMessage').innerText = "已执行关机指令";
+            orderDel(true);
+        } else {
+            var tmp = '电脑将于 ';
+            if (lastHour > 0) {
+                tmp += lastHour + ' 小时 ';
+            }
+            if (lastHour >= 0 || lastMinute > 0) {
+                tmp += (lastMinute > 9 ? '' : '0') + lastMinute + ' 分 ';
+            }
+            tmp += (lastSecond > 9 ? '' : '0') + lastSecond + ' 秒后关机';
+            document.getElementById('shutdownTimingMessage').innerText = tmp;
+        }
+    }, 1000);
+
+    var shutdownTimingVal = 0;
+    function ShutdownTimingControl(but) {
+        if (but != undefined) {
+            shutdownTimingVal = $("#shutdownTimingInput").val();
+            if (shutdownTimingVal == "" || shutdownTimingVal == undefined) {
+                shutdownTimingVal = 0;
+            }
+            $("#shutdownTimingRange").val(shutdownTimingVal);
+        } else {
+            shutdownTimingVal = $("#shutdownTimingRange").val();
+            if (shutdownTimingVal == "" || shutdownTimingVal == undefined) {
+                shutdownTimingVal = 0;
+            }
+            $("#shutdownTimingInput").val(shutdownTimingVal);
+        }
+
+        if (shutdownTimingVal > 0) {
+            lastHour = Math.floor(shutdownTimingVal / 60);
+            lastMinute = (shutdownTimingVal > 60 ? shutdownTimingVal % 60 : shutdownTimingVal) - 1;
+            lastSecond = 59;
+        }
+
+        $.ajax({
+            type: "GET",
+            url: "/Home/TimingShutdown?minute=" + (shutdownTimingVal * 60),
+            data: {},
+            contentType: "application/json",
+            success: function (data) {
+                //alert(data);
+            }
+        });
+
+    }
+
+    function CancelShutdown() {
+        shutdownTimingVal = 0;
+        $("#shutdownTimingInput").val(shutdownTimingVal);
+        $("#shutdownTimingRange").val(shutdownTimingVal);
+        document.getElementById('shutdownTimingMessage').innerText = "";
+        $.ajax({
+            type: "GET",
+            url: "/Home/TimingShutdown?minute=" + shutdownTimingVal,
+            data: {},
+            contentType: "application/json",
+            success: function (data) {
+                //alert(data);
+            }
+        });
+    }
+
+
+</script>

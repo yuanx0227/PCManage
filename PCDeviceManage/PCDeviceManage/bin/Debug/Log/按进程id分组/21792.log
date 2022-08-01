@@ -1,0 +1,12 @@
+﻿--------------------------------------------------【Header】--------------------------------------------------
+2022-04-28 08:40:52,777 WARN  [21792-5] Program.Main  开放Zyan端口15092成功  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Program.cs(96行)
+2022-04-28 08:40:52,866 INFO  [21792-6] DisplayInfo  DisplayInformation.GetDisplayMonitorsAsync() 获取到设备数量：1  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Monitor\DisplayInfo.cs(62行)
+2022-04-28 08:40:52,876 INFO  [21792-6] DisplayInfo  [{"DeviceInstanceId":"DISPLAY\\CSO1609\\5&14475071&0&UID4357","DisplayName":"","IsInternal":true,"ConnectionDescription":"Internal","PhysicalSize":16.0043125}]  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Monitor\DisplayInfo.cs(64行)
+2022-04-28 08:40:52,877 INFO  [21792-6] DisplayInfoGet   DisplayInfo.GetDisplayMonitorsAsync()获取到显示器数量：1  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Monitor\DisplayInfoGet.cs(48行)
+2022-04-28 08:40:52,880 INFO  [21792-6] DisplayContext  EnumerateDevices() 开始获取显示器枚举信息  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Monitor\DisplayContext.cs(73行)
+2022-04-28 08:40:52,882 INFO  [21792-6] DisplayInfoGet  []  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Monitor\DisplayInfoGet.cs(52行)
+2022-04-28 08:40:52,884 INFO  [21792-6] DisplayInfoGet  GetDisplayList()获取到显示器数量：0  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Monitor\DisplayInfoGet.cs(93行)
+2022-04-28 08:41:02,106 INFO  [21792-8] WindowsManage  开始锁定计算机。  D:\yuanx\C#\PCDeviceManage\PCDeviceManage\Manage\WindowsManage.cs(90行)
+
+--------------------------------------------------【Footer】--------------------------------------------------
+

@@ -1,0 +1,242 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Zyan.SafeDeserializationHelpers</name>
+    </assembly>
+    <members>
+        <member name="T:Zyan.SafeDeserializationHelpers.BinaryFormatterExtensions">
+            <summary>
+            Extension methods for the
+            </summary>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.BinaryFormatterExtensions.Safe(System.Runtime.Serialization.Formatters.Binary.BinaryFormatter)">
+            <summary>
+            Makes the <see cref="T:System.Runtime.Serialization.Formatters.Binary.BinaryFormatter"/> safe.
+            </summary>
+            <param name="fmt">The <see cref="T:System.Runtime.Serialization.Formatters.Binary.BinaryFormatter"/> to guard.</param>
+            <returns>The safe version of the <see cref="T:System.Runtime.Serialization.Formatters.Binary.BinaryFormatter"/>.</returns>
+        </member>
+        <member name="T:Zyan.SafeDeserializationHelpers.CustomDelegateSerializationHolder">
+            <summary>
+            Custom replacement for the DelegateSerializationHolder featuring delegate validation.
+            </summary>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.CustomDelegateSerializationHolder.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Zyan.SafeDeserializationHelpers.CustomDelegateSerializationHolder"/> class.
+            </summary>
+            <param name="info">Serialization info.</param>
+            <param name="context">Streaming context</param>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.CustomDelegateSerializationHolder.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc cref="T:System.Runtime.Serialization.ISerializable" />
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.CustomDelegateSerializationHolder.GetRealObject(System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc cref="T:System.Runtime.Serialization.IObjectReference" />
+        </member>
+        <member name="T:Zyan.SafeDeserializationHelpers.DataSetSurrogate">
+            <summary>
+            Deserialization surrogate for the DataSet class.
+            </summary>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.DataSetSurrogate.GetObjectData(System.Object,System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc cref="T:System.Runtime.Serialization.ISerializationSurrogate" />
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.DataSetSurrogate.SetObjectData(System.Object,System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext,System.Runtime.Serialization.ISurrogateSelector)">
+            <inheritdoc cref="T:System.Runtime.Serialization.ISerializationSurrogate" />
+        </member>
+        <member name="T:Zyan.SafeDeserializationHelpers.DelegateValidator">
+            <summary>
+            Blacklist-based delegate validator.
+            </summary>
+        </member>
+        <member name="F:Zyan.SafeDeserializationHelpers.DelegateValidator.DefaultBlacklistedNamespaces">
+            <summary>
+            The default blacklist of the namespaces.
+            </summary>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.DelegateValidator.#ctor(System.String[])">
+            <summary>
+            Initializes a new instance of the <see cref="T:Zyan.SafeDeserializationHelpers.DelegateValidator"/> class.
+            </summary>
+            <param name="blacklistedNamespaces">Namespace blacklist.</param>
+        </member>
+        <member name="P:Zyan.SafeDeserializationHelpers.DelegateValidator.Default">
+            <summary>
+            Gets or sets the default <see cref="T:Zyan.SafeDeserializationHelpers.IDelegateValidator"/> instance.
+            </summary>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.DelegateValidator.ValidateDelegate(System.Delegate)">
+            <summary>
+            Validates the given delegates.
+            Throws exceptions for methods defined in the blacklisted namespaces.
+            </summary>
+            <param name="del">The delegate to validate.</param>
+        </member>
+        <member name="T:Zyan.SafeDeserializationHelpers.IDelegateValidator">
+            <summary>
+            Interface for validating the deserialized delegates.
+            </summary>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.IDelegateValidator.ValidateDelegate(System.Delegate)">
+            <summary>
+            Validates the given delegate.
+            Throws exceptions for the unsafe delegates found in the invocation list.
+            </summary>
+            <param name="del">The delegate to validate.</param>
+        </member>
+        <member name="T:Zyan.SafeDeserializationHelpers.ITypeNameValidator">
+            <summary>
+            Interface for validating type names before loading types for deserialization.
+            </summary>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.ITypeNameValidator.ValidateTypeName(System.String,System.String)">
+            <summary>
+            Validates the given type name before loading.
+            Throws exceptions for the types not safe for deserialization.
+            </summary>
+            <param name="assemblyName">The name of the assembly.</param>
+            <param name="typeName">The name of the type.</param>
+        </member>
+        <member name="T:Zyan.SafeDeserializationHelpers.SafeSerializationBinder">
+            <inheritdoc cref="T:System.Runtime.Serialization.SerializationBinder" />
+        </member>
+        <member name="F:Zyan.SafeDeserializationHelpers.SafeSerializationBinder.CoreLibraryAssemblyName">
+            <summary>
+            Core library assembly name.
+            </summary>
+        </member>
+        <member name="F:Zyan.SafeDeserializationHelpers.SafeSerializationBinder.SystemDataAssemblyName">
+            <summary>
+            System.Data assembly name.
+            </summary>
+        </member>
+        <member name="F:Zyan.SafeDeserializationHelpers.SafeSerializationBinder.DelegateSerializationHolderTypeName">
+            <summary>
+            System.DelegateSerializationHolder type name.
+            </summary>
+        </member>
+        <member name="F:Zyan.SafeDeserializationHelpers.SafeSerializationBinder.DataSetTypeName">
+            <summary>
+            System.Data.DataSet type name.
+            </summary>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.SafeSerializationBinder.#ctor(System.Runtime.Serialization.SerializationBinder)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Zyan.SafeDeserializationHelpers.SafeSerializationBinder"/> class.
+            </summary>
+            <param name="nextBinder">Next serialization binder in chain.</param>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.SafeSerializationBinder.BindToType(System.String,System.String)">
+            <inheritdoc cref="T:System.Runtime.Serialization.SerializationBinder" />
+        </member>
+        <member name="T:Zyan.SafeDeserializationHelpers.SafeSurrogateSelector">
+            <summary>
+            Safe surrogate selector provides surrogates for DataSet and WindowsIdentity classes.
+            </summary>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.SafeSurrogateSelector.#ctor(System.Runtime.Serialization.ISurrogateSelector)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Zyan.SafeDeserializationHelpers.SafeSurrogateSelector"/> class.
+            </summary>
+            <param name="nextSelector">Next <see cref="T:System.Runtime.Serialization.ISurrogateSelector"/>, optional.</param>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.SafeSurrogateSelector.ChainSelector(System.Runtime.Serialization.ISurrogateSelector)">
+            <inheritdoc cref="T:System.Runtime.Serialization.ISurrogateSelector" />
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.SafeSurrogateSelector.GetNextSelector">
+            <inheritdoc cref="T:System.Runtime.Serialization.ISurrogateSelector" />
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.SafeSurrogateSelector.GetSurrogate(System.Type,System.Runtime.Serialization.StreamingContext,System.Runtime.Serialization.ISurrogateSelector@)">
+            <inheritdoc cref="T:System.Runtime.Serialization.ISurrogateSelector" />
+        </member>
+        <member name="T:Zyan.SafeDeserializationHelpers.TypeFullName">
+            <summary>
+            Represents the name of a .NET type.
+            </summary>
+            <remarks>
+            AssemblyName doesn't contain Version part.
+            </remarks>
+        </member>
+        <member name="P:Zyan.SafeDeserializationHelpers.TypeFullName.TypeName">
+            <summary>
+            Gets or sets the name of the type.
+            </summary>
+        </member>
+        <member name="P:Zyan.SafeDeserializationHelpers.TypeFullName.AssemblyName">
+            <summary>
+            Gets or sets the name of the assembly.
+            </summary>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.TypeFullName.Parse(System.String)">
+            <summary>
+            Parses the given type name and returns the <see cref="T:Zyan.SafeDeserializationHelpers.TypeFullName"/> instance.
+            </summary>
+            <param name="typeName">Assembly-qualified type name.</param>
+            <returns>A parsed <see cref="T:Zyan.SafeDeserializationHelpers.TypeFullName"/> instance.</returns>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.TypeFullName.GetHashCode">
+            <inheritdoc cref="T:System.Object" />
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.TypeFullName.Equals(Zyan.SafeDeserializationHelpers.TypeFullName)">
+            <inheritdoc cref="T:System.IEquatable`1" />
+        </member>
+        <member name="T:Zyan.SafeDeserializationHelpers.TypeNameValidator">
+            <summary>
+            Validates the type names before loading them for deserialization.
+            </summary>
+        </member>
+        <member name="F:Zyan.SafeDeserializationHelpers.TypeNameValidator.DefaultBlacklistedTypes">
+            <summary>
+            The default blacklist of the types.
+            </summary>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.TypeNameValidator.#ctor(System.String[])">
+            <summary>
+            Initializes a new instance of the <see cref="T:Zyan.SafeDeserializationHelpers.TypeNameValidator"/> class.
+            </summary>
+            <param name="blacklistedTypes">The list of the blacklisted types.</param>
+        </member>
+        <member name="P:Zyan.SafeDeserializationHelpers.TypeNameValidator.Default">
+            <summary>
+            Gets or sets the default <see cref="T:Zyan.SafeDeserializationHelpers.ITypeNameValidator" /> instance.
+            </summary>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.TypeNameValidator.ValidateTypeName(System.String,System.String)">
+            <inheritdoc cref="T:Zyan.SafeDeserializationHelpers.ITypeNameValidator" />
+        </member>
+        <member name="T:Zyan.SafeDeserializationHelpers.UnsafeDeserializationException">
+            <summary>
+            Exception to be thrown when possible deserialization vulnerability is detected.
+            </summary>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.UnsafeDeserializationException.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Zyan.SafeDeserializationHelpers.UnsafeDeserializationException"/> class.
+            </summary>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.UnsafeDeserializationException.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Zyan.SafeDeserializationHelpers.UnsafeDeserializationException"/> class.
+            </summary>
+            <param name="message">Exception message.</param>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.UnsafeDeserializationException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc cref="T:System.Security.SecurityException"/>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.UnsafeDeserializationException.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc cref="T:System.Security.SecurityException"/>
+        </member>
+        <member name="T:Zyan.SafeDeserializationHelpers.WindowsIdentitySurrogate">
+            <summary>
+            Deserialization surrogate for the WindowsIdentity class.
+            </summary>
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.WindowsIdentitySurrogate.GetObjectData(System.Object,System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc cref="T:System.Runtime.Serialization.ISerializationSurrogate" />
+        </member>
+        <member name="M:Zyan.SafeDeserializationHelpers.WindowsIdentitySurrogate.SetObjectData(System.Object,System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext,System.Runtime.Serialization.ISurrogateSelector)">
+            <inheritdoc cref="T:System.Runtime.Serialization.ISerializationSurrogate" />
+        </member>
+    </members>
+</doc>
