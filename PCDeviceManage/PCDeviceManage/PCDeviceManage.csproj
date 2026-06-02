@@ -67,9 +67,6 @@
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="srp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=91d1de3df99ea180, processorArchitecture=MSIL">
-      <HintPath>..\packages\srp.1.0.6\lib\net40\srp.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
@@ -80,23 +77,13 @@
     <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.ValueTuple.4.5.0\lib\portable-net40+sl4+win8+wp8\System.ValueTuple.dll</HintPath>
     </Reference>
-    <Reference Include="System.Web" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="Topshelf, Version=3.3.154.0, Culture=neutral, PublicKeyToken=b800c4cfcdeea87b, processorArchitecture=MSIL">
-      <HintPath>..\packages\Topshelf.3.3.1\lib\net40-full\Topshelf.dll</HintPath>
-    </Reference>
     <Reference Include="WindowsBase" />
-    <Reference Include="Zyan.Communication, Version=2.15.0.0, Culture=neutral, PublicKeyToken=022216e8e71b6602, processorArchitecture=MSIL">
-      <HintPath>..\packages\Zyan.2.15.0\lib\net40\Zyan.Communication.dll</HintPath>
-    </Reference>
-    <Reference Include="Zyan.SafeDeserializationHelpers, Version=0.1.0.0, Culture=neutral, PublicKeyToken=91d1de3df99ea180, processorArchitecture=MSIL">
-      <HintPath>..\packages\Zyan.SafeDeserializationHelpers.0.5.1\lib\net35\Zyan.SafeDeserializationHelpers.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Form1.cs">
@@ -106,7 +93,10 @@
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
     <Compile Include="Manage\AudioManage.cs" />
+    <Compile Include="Manage\DisplayDeviceCache.cs" />
     <Compile Include="Manage\DisplayManage.cs" />
+    <Compile Include="Web\IndexPage.cs" />
+    <Compile Include="Web\LocalWebServer.cs" />
     <Compile Include="Monitor\DdcMonitorItem.cs" />
     <Compile Include="Monitor\DisplayContext.cs" />
     <Compile Include="Monitor\DisplayInfo.cs" />
@@ -170,6 +160,36 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="frp\frpc.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="frp\frpc_full.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="frp\frps.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="frp\frpStart.bat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="frp\frps_full.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="frp\LICENSE">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="frp\systemd\frpc%40.service">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="frp\systemd\frpc.service">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="frp\systemd\frps%40.service">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="frp\systemd\frps.service">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="log4net.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -179,10 +199,6 @@
     <ProjectReference Include="..\Monitorian.Supplement\Monitorian.Supplement.csproj">
       <Project>{6E338214-E33C-4014-9BDD-6D914E6C536D}</Project>
       <Name>Monitorian.Supplement</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\ZyanInterface\ZyanInterface.csproj">
-      <Project>{9C883DE5-A358-49F8-845D-98B072362E72}</Project>
-      <Name>ZyanInterface</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -201,6 +217,14 @@
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="frp\frpc.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="frp\frps.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

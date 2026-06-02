@@ -2,7 +2,9 @@
 ![界面截图](https://user-images.githubusercontent.com/50823974/217014208-3ab003ac-c30d-4557-af5b-26363fb337f0.png)  
 ![演示视频](https://user-images.githubusercontent.com/50823974/217262746-c5047b2f-bacd-48d0-975d-186790df3a7d.gif)
 
-PC控制（PCManage）是一个包含远程调整windows电脑显示器亮度（支持外接显示器、多显示器）、音量，设置定时关机、一键锁屏、关机、重启功能的软件。软件分为客户端（Web）和服务端（Winform），使用开源项目Zyan作为前后端通讯接口，参考开源项目Monitorian实现外接显示器亮度调节功能，使用FRP进行端口映射将本地部署的网页端口映射至公网。
+PC控制（PCManage）是一个包含远程调整 Windows 电脑显示器亮度（支持外接显示器、多显示器）、音量，设置定时关机、一键锁屏、关机、重启功能的软件。运行 PCDeviceManage.exe 后会启动本地 Web 控制台，可通过浏览器访问页面完成设备控制。项目参考开源项目 Monitorian 实现外接显示器亮度调节功能，使用 FRP 进行端口映射将本地部署的网页端口映射至公网。
+
+PCManage is a lightweight Windows device-control tool that exposes a local web console for managing display brightness, volume, lock, shutdown, restart, and scheduled shutdown actions.
 
 # 开发
 
@@ -10,7 +12,6 @@ PC控制（PCManage）是一个包含远程调整windows电脑显示器亮度（
   .NET Framework 4.6
 
 ## 相关项目
-   - <a href="https://github.com/zyanfx/Zyan">Zyan</a>：RPC接口通讯框架  
    - <a href="https://github.com/emoacht/Monitorian">Monitorian</a>:调节显示器亮度的Windows桌面工具
    - <a href="https://github.com/fatedier/frp">Frp</a>:反向代理工具
   

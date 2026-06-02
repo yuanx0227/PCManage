@@ -5,11 +5,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ZyanInterface;
 
 namespace PCDeviceManage
 {
-    public class AudioManage : AudioInterface
+    public class AudioManage
     {
         static MMDevice device;
 

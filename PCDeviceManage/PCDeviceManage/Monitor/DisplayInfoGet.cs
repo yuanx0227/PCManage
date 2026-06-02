@@ -1,11 +1,8 @@
 ﻿using log4net;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace PCDeviceManage
 {
@@ -49,7 +46,7 @@ namespace PCDeviceManage
 			var deviceItems = DisplayContext.EnumerateMonitorDevices().ToArray();
 			//_foundIds = new HashSet<string>(deviceItems.Select(x => x.DeviceInstanceId));
 
-			_log.Info(JsonConvert.SerializeObject(deviceItems));
+			_log.Info("DisplayContext.EnumerateMonitorDevices()获取到设备数量：" + deviceItems.Length);
 
 			IEnumerable<DeviceItemPlus> Enumerate()
 			{
@@ -87,17 +84,27 @@ namespace PCDeviceManage
 		{
 			var deviceItemPlusList = GetDisplayList();
 			_log.Info("GetDisplayList()获取到显示器数量：" + deviceItemPlusList.Count());
+			int internalBrightness = deviceItemPlusList.Any(x => x.IsInternal)
+				? PowerManagement.GetActiveSchemeBrightness()
+				: 0;
+			Dictionary<string, int> externalBrightnessMap = deviceItemPlusList.Any(x => !x.IsInternal)
+				? GetExternalDisplayBrightnessMap(deviceItemPlusList)
+				: new Dictionary<string, int>();
+
 			foreach (var item in deviceItemPlusList)
             {
                 if (item.IsInternal)
                 {
-					item.Brightness = PowerManagement.GetActiveSchemeBrightness();
+					item.Brightness = internalBrightness;
                 }
                 else
                 {
 					//var temp = new DdcMonitorItem();
 					//temp.UpdateBrightness();
-					item.Brightness = GetExternalDisplayBrightness(deviceItemPlusList);
+					int externalBrightness;
+					item.Brightness = externalBrightnessMap.TryGetValue(GetMonitorKey(item), out externalBrightness)
+						? externalBrightness
+						: 0;
 				}
 
 
@@ -107,8 +114,9 @@ namespace PCDeviceManage
 
 
 
-		private int GetExternalDisplayBrightness(List<DeviceItemPlus> deviceItemPlusList) 
+		private Dictionary<string, int> GetExternalDisplayBrightnessMap(List<DeviceItemPlus> deviceItemPlusList) 
 		{
+			var brightnessMap = new Dictionary<string, int>();
 			var handleItems = temp.GetMonitorHandles();
 			foreach (var handleItem in handleItems)
 			{
@@ -131,6 +139,7 @@ namespace PCDeviceManage
 
                     if (deviceItemPlusList[index].IsInternal)
                     {
+						physicalItem.Handle.Dispose();
 						continue;
                     }
 					var deviceItem = deviceItemPlusList[index];
@@ -150,8 +159,6 @@ namespace PCDeviceManage
 						continue;
 					}
 
-					var temp = physicalItem.Handle;
-
 					_handle= physicalItem.Handle;
 
 					DdcMonitorItem ddcMonitorItem = new DdcMonitorItem(deviceInstanceId: deviceItem.DeviceInstanceId,
@@ -162,11 +169,21 @@ namespace PCDeviceManage
 						handle: physicalItem.Handle,
 						capability: capability);
 					ddcMonitorItem.UpdateBrightness();
-					return ddcMonitorItem.Brightness;
+					brightnessMap[GetMonitorKey(deviceItem)] = ddcMonitorItem.Brightness;
 
 				}
 			}
-			return 0;
+			return brightnessMap;
+		}
+
+		private static string GetMonitorKey(DeviceItemPlus deviceItem)
+		{
+			return GetMonitorKey(deviceItem.DisplayIndex, deviceItem.MonitorIndex, deviceItem.Description);
+		}
+
+		private static string GetMonitorKey(byte displayIndex, byte monitorIndex, string description)
+		{
+			return displayIndex + "|" + monitorIndex + "|" + (description ?? string.Empty).ToUpperInvariant();
 		}
 
 

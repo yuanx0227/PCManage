@@ -1,15 +1,17 @@
-﻿using log4net;
-using Newtonsoft.Json;
-using System.Collections.Generic;
-using ZyanInterface;
-
+using log4net;
 
 namespace PCDeviceManage
 {
-    public class DisplayManage : DisplayInterface
+    public class DisplayManage
     {
-        //日志方法调用
         private static ILog _log = LogManager.GetLogger("DisplayManage");
+        private readonly DisplayDeviceCache _displayDeviceCache;
+
+        public DisplayManage(DisplayDeviceCache displayDeviceCache = null)
+        {
+            _displayDeviceCache = displayDeviceCache ?? new DisplayDeviceCache(new DisplayDeviceProvider(), _log);
+            _displayDeviceCache.Start();
+        }
 
         public int GetDisplayBrightness(string displayName)
         {
@@ -20,30 +22,30 @@ namespace PCDeviceManage
         {
             try
             {
-                DisplayInfoGet displayInfoGet = new DisplayInfoGet();
-                var displayList = displayInfoGet.GetDisplayListAndBrightness();
-                return JsonConvert.SerializeObject(displayList);
-                //return displayList.tojison();
-
+                return _displayDeviceCache.GetDisplayListJson(true);
             }
             catch (System.Exception ex)
             {
-                _log.Error($"获取显示器信息出错", ex);
+                _log.Error("Get display list failed.", ex);
                 return string.Empty;
             }
         }
 
-        public bool SetDisplayBrightness(int brightness,bool IsInternal)
+        public bool SetDisplayBrightness(int brightness, bool IsInternal)
         {
             try
             {
-                _log.Info($"修改{(IsInternal?"内屏":"外屏")}亮度为：{brightness}");
-
-                return PowerManagement.SetActiveSchemeBrightness(brightness, IsInternal);
+                _log.Info("Set display brightness to " + brightness + ".");
+                bool result = PowerManagement.SetActiveSchemeBrightness(brightness, IsInternal);
+                if (result)
+                {
+                    _displayDeviceCache.UpdateCachedBrightness(brightness, IsInternal);
+                }
+                return result;
             }
             catch (System.Exception ex)
             {
-                _log.Error($"修改显示器亮度出错", ex);
+                _log.Error("Set display brightness failed.", ex);
                 return false;
             }
         }

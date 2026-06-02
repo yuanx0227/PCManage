@@ -1,6 +1,5 @@
 ﻿using log4net;
 using Monitorian.Supplement;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -61,8 +60,6 @@ namespace PCDeviceManage
 				.ContinueWith(task => task.Result.Select(x => new DisplayItem(x)).ToArray()).Result;
 
 			_log.Info("DisplayInformation.GetDisplayMonitorsAsync() 获取到设备数量："+ temp.Length);
-
-			_log.Info(JsonConvert.SerializeObject(temp));
 
 			return temp;
 		}

@@ -6,11 +6,10 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using ZyanInterface;
 
 namespace PCDeviceManage
 {
-    public class WindowsManage : SystemInterface
+    public class WindowsManage
     {
 
         //日志方法调用
