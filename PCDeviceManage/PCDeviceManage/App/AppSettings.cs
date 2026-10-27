@@ -1,8 +1,9 @@
-using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace PCDeviceManage
 {
@@ -15,18 +16,27 @@ namespace PCDeviceManage
         public const int DefaultWebPort = 9527;
         public const string DefaultWebHost = "127.0.0.1";
 
-        [JsonProperty("webHost")]
+        [JsonPropertyName("webHost")]
         public string WebHost { get; set; } = DefaultWebHost;
 
-        [JsonProperty("webPort")]
+        [JsonPropertyName("webPort")]
         public int WebPort { get; set; } = DefaultWebPort;
 
-        [JsonProperty("accessToken")]
+        [JsonPropertyName("accessToken")]
         public string AccessToken { get; set; }
 
         /// <summary>frp\frpc.exe 和 frp\frpc.ini 都存在时是否启动 frp。</summary>
-        [JsonProperty("frpEnabled")]
+        [JsonPropertyName("frpEnabled")]
         public bool FrpEnabled { get; set; } = true;
+
+        // 配置文件允许手工编辑：忽略大小写、允许注释和末尾逗号。
+        private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            AllowTrailingCommas = true,
+            WriteIndented = true
+        };
 
         public static string DataDirectory =>
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PCManage");
@@ -50,7 +60,7 @@ namespace PCDeviceManage
             {
                 try
                 {
-                    settings = JsonConvert.DeserializeObject<AppSettings>(File.ReadAllText(path, Encoding.UTF8)) ?? new AppSettings();
+                    settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(path, Encoding.UTF8), JsonOptions) ?? new AppSettings();
                 }
                 catch (JsonException ex)
                 {
@@ -97,7 +107,7 @@ namespace PCDeviceManage
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path));
             string temp = path + ".tmp";
-            File.WriteAllText(temp, JsonConvert.SerializeObject(this, Formatting.Indented), new UTF8Encoding(false));
+            File.WriteAllText(temp, JsonSerializer.Serialize(this, JsonOptions), new UTF8Encoding(false));
             if (File.Exists(path))
             {
                 File.Replace(temp, path, null);

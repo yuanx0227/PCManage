@@ -16,7 +16,7 @@ PCManage is a lightweight Windows device-control tool that exposes a local web c
 
 | 字段 | 默认值 | 说明 |
 |---|---|---|
-| `webHost` | `127.0.0.1` | 监听地址。局域网访问可改成 `+`（需要管理员执行一次 `netsh http add urlacl`） |
+| `webHost` | `127.0.0.1` | 监听地址：IP 地址、`localhost`，或 `+` 表示所有地址（局域网访问用，首次启动时 Windows 防火墙会询问是否放行） |
 | `webPort` | `9527` | 端口，frp 示例配置默认映射这个端口 |
 | `accessToken` | 自动生成 | 访问令牌 |
 | `frpEnabled` | `true` | `frp\frpc.exe` 和 `frp\frpc.ini` 都存在时是否启动 frp |

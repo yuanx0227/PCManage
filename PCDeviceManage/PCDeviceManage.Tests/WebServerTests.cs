@@ -13,6 +13,16 @@ namespace PCDeviceManage.Tests
     public class WebServerTests
     {
         [Fact]
+        public void WebHostSettingMapsToListenAddress()
+        {
+            Assert.Equal(IPAddress.IPv6Any, WebServer.ResolveAddress("+"));
+            Assert.Equal(IPAddress.IPv6Any, WebServer.ResolveAddress("0.0.0.0"));
+            Assert.Equal(IPAddress.Loopback, WebServer.ResolveAddress("localhost"));
+            Assert.Equal(IPAddress.Parse("192.168.1.5"), WebServer.ResolveAddress("192.168.1.5"));
+            Assert.Throws<ArgumentException>(() => WebServer.ResolveAddress("my-pc"));
+        }
+
+        [Fact]
         public void WebServerRequiresLogin()
         {
             using (var server = new TestServer())
@@ -27,7 +37,8 @@ namespace PCDeviceManage.Tests
                 TestResponse login = server.Send("POST", "/api/login", "token=" + Uri.EscapeDataString(TestServer.Token));
                 string setCookie = login.Headers["Set-Cookie"] ?? string.Empty;
                 Assert.True(login.StatusCode == HttpStatusCode.OK, "Expected correct token to log in.");
-                Assert.True(setCookie.Contains("HttpOnly") && setCookie.Contains("SameSite=Strict"), "Expected a hardened session cookie.");
+                Assert.True(setCookie.IndexOf("httponly", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    setCookie.IndexOf("samesite=strict", StringComparison.OrdinalIgnoreCase) >= 0, "Expected a hardened session cookie, got " + setCookie);
 
                 Assert.True(server.Send("GET", "/").StatusCode == HttpStatusCode.OK, "Expected page to load after login.");
                 Assert.True(server.Send("GET", "/api/power/schedule").StatusCode == HttpStatusCode.OK, "Expected API to work after login.");
@@ -100,10 +111,13 @@ namespace PCDeviceManage.Tests
                 Assert.True(server.Scheduler.Deadline.HasValue, "Expected scheduler to hold a deadline.");
 
                 server.Send("GET", "/api/power/schedule");
-                var state = Newtonsoft.Json.Linq.JObject.Parse(server.LastBody);
-                int remaining = (int)state["data"]["remainingSeconds"];
-                Assert.True((bool)state["ok"] && remaining > 590 && remaining <= 600, "Expected about 600 seconds remaining, got " + server.LastBody);
-                Assert.True(state["data"]["deadline"].Type == Newtonsoft.Json.Linq.JTokenType.Date || ((string)state["data"]["deadline"]).Length > 0, "Expected the deadline to be reported.");
+                using (var state = System.Text.Json.JsonDocument.Parse(server.LastBody))
+                {
+                    var data = state.RootElement.GetProperty("data");
+                    int remaining = data.GetProperty("remainingSeconds").GetInt32();
+                    Assert.True(state.RootElement.GetProperty("ok").GetBoolean() && remaining > 590 && remaining <= 600, "Expected about 600 seconds remaining, got " + server.LastBody);
+                    Assert.True(data.GetProperty("deadline").GetDateTime() > DateTime.UtcNow, "Expected the deadline to be reported.");
+                }
 
                 Assert.True(server.Send("POST", "/api/power/schedule", "seconds=abc").StatusCode == HttpStatusCode.BadRequest, "Expected invalid seconds to return 400.");
                 Assert.True(server.LastBody.Contains("\"ok\":false"), "Expected an error envelope.");

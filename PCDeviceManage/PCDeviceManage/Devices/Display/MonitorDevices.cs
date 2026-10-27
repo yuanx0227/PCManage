@@ -1,7 +1,7 @@
-using Newtonsoft.Json;
 using System;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace PCDeviceManage
 {
@@ -24,19 +24,19 @@ namespace PCDeviceManage
 
     public sealed class MonitorInfo
     {
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public string Id { get; set; }
 
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set; }
 
-        [JsonProperty("isInternal")]
+        [JsonPropertyName("isInternal")]
         public bool IsInternal { get; set; }
 
-        [JsonProperty("brightness")]
+        [JsonPropertyName("brightness")]
         public int Brightness { get; set; }
 
-        [JsonProperty("supported")]
+        [JsonPropertyName("supported")]
         public bool Supported { get; set; }
     }
 
