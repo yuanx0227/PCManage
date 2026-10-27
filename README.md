@@ -6,6 +6,22 @@ PC控制（PCManage）是一个包含远程调整 Windows 电脑显示器亮度�
 
 PCManage is a lightweight Windows device-control tool that exposes a local web console for managing display brightness, volume, lock, shutdown, restart, and scheduled shutdown actions.
 
+# 使用
+
+## 访问令牌
+控制台需要登录后才能使用。首次运行时会自动生成访问令牌，保存在 `%LocalAppData%\PCManage\access_token`；也可以在 `PCDeviceManage.exe.config` 的 `AccessToken` 中自行指定。浏览器打开控制台后，在登录页输入令牌即可。
+
+脚本或快捷指令可以在请求头 `X-Access-Token` 中携带令牌；会改变状态的接口（锁屏、关机、亮度、音量等）只接受 POST，并且必须带请求头 `X-PCM-Request: 1`。
+
+## 公网访问（frp，可选）
+仓库不再包含 frp 的程序和服务器配置，需要时按以下步骤配置：
+
+1. 从 [frp Releases](https://github.com/fatedier/frp/releases) 下载与服务器 frps 版本匹配的 Windows 版 `frpc.exe`，放到 `PCDeviceManage\frp\` 目录（当前示例配置按 0.39.x 的 ini 格式编写）。
+2. 把 `frp\frpc.example.ini` 复制为 `frp\frpc.ini`，填写服务器地址和 `token`；frps 侧也要配置相同的 `authentication_method = token` 和 `token`。
+3. 尽量用 HTTPS 访问（示例配置中的 `https2http` 方式），否则访问令牌会以明文在公网上传输。只是自己用的话，更推荐 Tailscale / ZeroTier 这类组网工具，完全不把端口暴露到公网。
+
+`frpc.ini` 和 `frpc.exe` 已加入 `.gitignore`。没有这两个文件时，程序会跳过 frp，只提供本机访问。
+
 # 开发
 
 ## 开发环境

@@ -13,3 +13,7 @@ packages/
 # Runtime logs
 *.log
 *.Log
+
+# frp: local config holds the server address and token; download frpc.exe separately
+PCDeviceManage/PCDeviceManage/frp/frpc.ini
+PCDeviceManage/PCDeviceManage/frp/*.exe

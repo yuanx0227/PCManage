@@ -3,6 +3,7 @@ using Monitorian.Supplement;
 using System;
 using System.Configuration;
 using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Text;
@@ -35,10 +36,18 @@ namespace PCDeviceManage
         /// </summary>
         private static void StartFrp()
         {
+            string frpDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "frp");
+            if (!File.Exists(Path.Combine(frpDirectory, "frpc.exe")) || !File.Exists(Path.Combine(frpDirectory, "frpc.ini")))
+            {
+                _log.Info("未找到 frp\\frpc.exe 或 frp\\frpc.ini，跳过 frp 端口映射。配置方法见 frp\\frpc.example.ini。");
+                return;
+            }
+
             try
             {
                 System.Diagnostics.ProcessStartInfo myStartInfo = new System.Diagnostics.ProcessStartInfo();
-                myStartInfo.FileName = "frp\\frpStart.bat";
+                myStartInfo.FileName = Path.Combine(frpDirectory, "frpStart.bat");
+                myStartInfo.WorkingDirectory = frpDirectory;
                 System.Diagnostics.Process myProcess = new System.Diagnostics.Process();
                 myProcess.StartInfo = myStartInfo;
                 myProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
