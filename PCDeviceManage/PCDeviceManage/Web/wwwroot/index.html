@@ -1,13 +1,9 @@
-namespace PCDeviceManage
-{
-    internal static class IndexPage
-    {
-        public const string Html = @"<!DOCTYPE html>
-<html lang=""zh-CN"">
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
-    <meta http-equiv=""Content-Type"" content=""text/html; charset=utf-8"" />
-    <meta charset=""utf-8"" />
-    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>&#x7535;&#x8111;&#x63A7;&#x5236;</title>
     <style>
         :root {
@@ -41,7 +37,7 @@ namespace PCDeviceManage
             margin: 0;
             color: var(--text);
             background: var(--bg);
-            font-family: ""Segoe UI"", ""Microsoft YaHei UI"", ""PingFang SC"", system-ui, sans-serif;
+            font-family: "Segoe UI", "Microsoft YaHei UI", "PingFang SC", system-ui, sans-serif;
             font-size: 15px;
             line-height: 1.5;
             -webkit-tap-highlight-color: transparent;
@@ -80,7 +76,7 @@ namespace PCDeviceManage
             height: 6px;
             border-radius: 50%;
             background: var(--muted);
-            content: """";
+            content: "";
         }
 
         .status.ok::before { background: var(--ok); }
@@ -119,7 +115,7 @@ namespace PCDeviceManage
             font-size: 13px;
         }
 
-        input[type=""range""]:disabled { opacity: 0.4; }
+        input[type="range"]:disabled { opacity: 0.4; }
 
         .row + .row {
             margin-top: 14px;
@@ -154,13 +150,13 @@ namespace PCDeviceManage
             text-align: right;
         }
 
-        input[type=""range""] {
+        input[type="range"] {
             height: 28px;
             margin: 0;
             accent-color: var(--accent);
         }
 
-        input[type=""number""] {
+        input[type="number"] {
             width: 100%;
             min-width: 0;
             height: 38px;
@@ -172,7 +168,7 @@ namespace PCDeviceManage
             font: inherit;
         }
 
-        input[type=""number""]:focus {
+        input[type="number"]:focus {
             border-color: var(--accent);
             outline: none;
         }
@@ -251,101 +247,103 @@ namespace PCDeviceManage
     </style>
 </head>
 <body>
-    <div class=""page"">
+    <div class="page">
         <header>
             <h1>&#x7535;&#x8111;&#x63A7;&#x5236;</h1>
-            <span class=""status"" id=""status"">&#x8FDE;&#x63A5;&#x4E2D;</span>
+            <span class="status" id="status">&#x8FDE;&#x63A5;&#x4E2D;</span>
         </header>
 
         <section>
-            <div class=""section-head"">
+            <div class="section-head">
                 <h2>&#x663E;&#x793A;&#x5668;&#x4EAE;&#x5EA6;</h2>
-                <button class=""link"" id=""rescanDisplays"">&#x91CD;&#x65B0;&#x68C0;&#x6D4B;</button>
+                <button class="link" id="rescanDisplays">&#x91CD;&#x65B0;&#x68C0;&#x6D4B;</button>
             </div>
-            <div id=""displayList"">
-                <div class=""empty"">&#x6B63;&#x5728;&#x8BFB;&#x53D6;&#x663E;&#x793A;&#x5668;&#x4FE1;&#x606F;&#x2026;</div>
+            <div id="displayList">
+                <div class="empty">&#x6B63;&#x5728;&#x8BFB;&#x53D6;&#x663E;&#x793A;&#x5668;&#x4FE1;&#x606F;&#x2026;</div>
             </div>
         </section>
 
         <section>
             <h2>&#x97F3;&#x91CF;</h2>
-            <div class=""slider"">
-                <input type=""range"" id=""volumeRange"" min=""0"" max=""100"" value=""0"" aria-label=""&#x97F3;&#x91CF;"" />
-                <span class=""value"" id=""volumeValue"">0%</span>
+            <div class="slider">
+                <input type="range" id="volumeRange" min="0" max="100" value="0" aria-label="&#x97F3;&#x91CF;" />
+                <span class="value" id="volumeValue">0%</span>
             </div>
         </section>
 
         <section>
             <h2>&#x5B9A;&#x65F6;&#x5173;&#x673A;</h2>
-            <div class=""presets"">
-                <button data-minutes=""30"">30&#x5206;&#x949F;</button>
-                <button data-minutes=""60"">1&#x5C0F;&#x65F6;</button>
-                <button data-minutes=""90"">1.5&#x5C0F;&#x65F6;</button>
-                <button data-minutes=""120"">2&#x5C0F;&#x65F6;</button>
+            <div class="presets">
+                <button data-minutes="30">30&#x5206;&#x949F;</button>
+                <button data-minutes="60">1&#x5C0F;&#x65F6;</button>
+                <button data-minutes="90">1.5&#x5C0F;&#x65F6;</button>
+                <button data-minutes="120">2&#x5C0F;&#x65F6;</button>
             </div>
-            <div class=""inline"">
-                <input id=""shutdownInput"" type=""number"" min=""1"" max=""10000"" inputmode=""numeric"" placeholder=""&#x81EA;&#x5B9A;&#x4E49;&#x5206;&#x949F;&#x6570;"" />
-                <button class=""primary"" id=""applyShutdown"">&#x5F00;&#x59CB;</button>
+            <div class="inline">
+                <input id="shutdownInput" type="number" min="1" max="10000" inputmode="numeric" placeholder="&#x81EA;&#x5B9A;&#x4E49;&#x5206;&#x949F;&#x6570;" />
+                <button class="primary" id="applyShutdown">&#x5F00;&#x59CB;</button>
             </div>
-            <div class=""timer-state"" id=""timerState"">
+            <div class="timer-state" id="timerState">
                 <div>
-                    <strong id=""timerRemaining""></strong>
-                    <div class=""muted"" id=""timerAt""></div>
+                    <strong id="timerRemaining"></strong>
+                    <div class="muted" id="timerAt"></div>
                 </div>
-                <button id=""cancelShutdown"">&#x53D6;&#x6D88;</button>
+                <button id="cancelShutdown">&#x53D6;&#x6D88;</button>
             </div>
         </section>
 
         <section>
             <h2>&#x7CFB;&#x7EDF;</h2>
-            <div class=""actions"">
-                <button id=""lockWindows"">&#x9501;&#x5B9A;</button>
-                <button class=""danger"" id=""shutdownNow"">&#x5173;&#x673A;</button>
-                <button class=""danger"" id=""restartNow"">&#x91CD;&#x542F;</button>
+            <div class="actions">
+                <button id="lockWindows">&#x9501;&#x5B9A;</button>
+                <button class="danger" id="shutdownNow">&#x5173;&#x673A;</button>
+                <button class="danger" id="restartNow">&#x91CD;&#x542F;</button>
             </div>
         </section>
     </div>
 
     <script>
         const $ = id => document.getElementById(id);
-        const statusEl = $(""status"");
-        const displayList = $(""displayList"");
-        const volumeRange = $(""volumeRange"");
-        const volumeValue = $(""volumeValue"");
-        const shutdownInput = $(""shutdownInput"");
-        const timerState = $(""timerState"");
-        const timerRemaining = $(""timerRemaining"");
-        const timerAt = $(""timerAt"");
+        const statusEl = $("status");
+        const displayList = $("displayList");
+        const volumeRange = $("volumeRange");
+        const volumeValue = $("volumeValue");
+        const shutdownInput = $("shutdownInput");
+        const timerState = $("timerState");
+        const timerRemaining = $("timerRemaining");
+        const timerAt = $("timerAt");
         let shutdownSeconds = 0;
         let countdownTimer = null;
 
-        function requestText(url, params) {
-            const options = { cache: ""no-store"" };
-            if (params) {
-                options.method = ""POST"";
-                options.headers = { ""Content-Type"": ""application/x-www-form-urlencoded"", ""X-PCM-Request"": ""1"" };
-                options.body = new URLSearchParams(params);
+        // \u63A5\u53E3\u7EDF\u4E00\u8FD4\u56DE { ok, data } \u6216 { ok: false, error }\uFF1B\u975E GET \u8BF7\u6C42\u5FC5\u987B\u5E26 X-PCM-Request \u5934\u3002
+        function api(method, url, params) {
+            const options = { method: method, cache: "no-store", headers: {} };
+            if (method !== "GET") {
+                options.headers["X-PCM-Request"] = "1";
+                if (params) {
+                    options.headers["Content-Type"] = "application/x-www-form-urlencoded";
+                    options.body = new URLSearchParams(params);
+                }
             }
-            return fetch(url, options).then(response => {
-                if (response.status === 401) location.replace(""/login"");
-                if (!response.ok) throw new Error(response.status);
-                return response.text();
-            });
+            return fetch(url, options)
+                .then(response => {
+                    if (response.status === 401) location.replace("/login");
+                    return response.json().catch(() => ({ ok: false, error: String(response.status) }));
+                })
+                .then(result => {
+                    if (!result.ok) throw new Error(result.error);
+                    setStatus("\u5DF2\u8FDE\u63A5", "ok");
+                    return result.data;
+                })
+                .catch(error => { setStatus("\u8FDE\u63A5\u5931\u8D25", "error"); throw error; });
         }
 
-        function send(url, params) {
-            return requestText(url, params)
-                .then(text => { setStatus(""\u5DF2\u8FDE\u63A5"", ""ok""); return text; })
-                .catch(error => { setStatus(""\u8FDE\u63A5\u5931\u8D25"", ""error""); throw error; });
-        }
-
-        function post(url, params) {
-            return send(url, params || {});
-        }
+        const get = url => api("GET", url);
+        const post = (url, params) => api("POST", url, params);
 
         function setStatus(text, state) {
             statusEl.textContent = text;
-            statusEl.className = ""status"" + (state ? "" "" + state : """");
+            statusEl.className = "status" + (state ? " " + state : "");
         }
 
         function throttle(fn, wait) {
@@ -370,21 +368,21 @@ namespace PCDeviceManage
         }
 
         function createSlider(initial, label, onChange, disabled) {
-            const wrap = document.createElement(""div"");
-            wrap.className = ""slider"";
-            const range = document.createElement(""input"");
-            range.type = ""range"";
-            range.min = ""0"";
-            range.max = ""100"";
+            const wrap = document.createElement("div");
+            wrap.className = "slider";
+            const range = document.createElement("input");
+            range.type = "range";
+            range.min = "0";
+            range.max = "100";
             range.value = clamp(initial);
             range.disabled = !!disabled;
-            range.setAttribute(""aria-label"", label);
-            const value = document.createElement(""span"");
-            value.className = ""value"";
-            value.textContent = initial < 0 ? ""--"" : range.value + ""%"";
+            range.setAttribute("aria-label", label);
+            const value = document.createElement("span");
+            value.className = "value";
+            value.textContent = initial < 0 ? "--" : range.value + "%";
             const sendThrottled = throttle(onChange, 150);
-            range.addEventListener(""input"", () => {
-                value.textContent = range.value + ""%"";
+            range.addEventListener("input", () => {
+                value.textContent = range.value + "%";
                 sendThrottled(range.value);
             });
             wrap.appendChild(range);
@@ -393,76 +391,76 @@ namespace PCDeviceManage
         }
 
         function renderDisplays(items) {
-            displayList.innerHTML = """";
+            displayList.innerHTML = "";
             if (!items || items.length === 0) {
-                displayList.innerHTML = ""<div class='empty'>\u672A\u68C0\u6D4B\u5230\u53EF\u8C03\u8282\u4EAE\u5EA6\u7684\u663E\u793A\u5668</div>"";
+                displayList.innerHTML = "<div class='empty'>\u672A\u68C0\u6D4B\u5230\u53EF\u8C03\u8282\u4EAE\u5EA6\u7684\u663E\u793A\u5668</div>";
                 return;
             }
 
             items.forEach((item, index) => {
-                const name = item.name || (""\u663E\u793A\u5668 "" + (index + 1));
-                const row = document.createElement(""div"");
-                row.className = ""row"";
+                const name = item.name || ("\u663E\u793A\u5668 " + (index + 1));
+                const row = document.createElement("div");
+                row.className = "row";
 
-                const label = document.createElement(""div"");
-                label.className = ""row-label"";
-                const title = document.createElement(""span"");
+                const label = document.createElement("div");
+                label.className = "row-label";
+                const title = document.createElement("span");
                 title.textContent = name;
-                const tag = document.createElement(""span"");
-                tag.className = ""tag"";
-                tag.textContent = (item.isInternal ? ""\u5185\u7F6E"" : ""\u5916\u63A5"") + (item.supported ? """" : "" \u00B7 \u4E0D\u652F\u6301\u8C03\u8282"");
+                const tag = document.createElement("span");
+                tag.className = "tag";
+                tag.textContent = (item.isInternal ? "\u5185\u7F6E" : "\u5916\u63A5") + (item.supported ? "" : " \u00B7 \u4E0D\u652F\u6301\u8C03\u8282");
                 label.appendChild(title);
                 label.appendChild(tag);
 
                 row.appendChild(label);
-                row.appendChild(createSlider(item.brightness, name + "" \u4EAE\u5EA6"", value =>
-                    post(""/api/displays/"" + encodeURIComponent(item.id) + ""/brightness"", { value: value }).catch(() => {}), !item.supported));
+                row.appendChild(createSlider(item.brightness, name + " \u4EAE\u5EA6", value =>
+                    post("/api/displays/" + encodeURIComponent(item.id) + "/brightness", { value: value }).catch(() => {}), !item.supported));
                 displayList.appendChild(row);
             });
         }
 
         function loadDisplays(request) {
-            return (request || send(""/api/displays?refresh=true"")).then(data => {
-                renderDisplays(data ? JSON.parse(data) : []);
+            return (request || get("/api/displays?refresh=true")).then(items => {
+                renderDisplays(items || []);
             }).catch(() => {
-                displayList.innerHTML = ""<div class='empty'>\u8BFB\u53D6\u663E\u793A\u5668\u4FE1\u606F\u5931\u8D25</div>"";
+                displayList.innerHTML = "<div class='empty'>\u8BFB\u53D6\u663E\u793A\u5668\u4FE1\u606F\u5931\u8D25</div>";
             });
         }
 
         function rescanDisplays() {
-            displayList.innerHTML = ""<div class='empty'>\u6B63\u5728\u91CD\u65B0\u68C0\u6D4B\u2026</div>"";
-            return loadDisplays(post(""/api/displays/rescan""));
+            displayList.innerHTML = "<div class='empty'>\u6B63\u5728\u91CD\u65B0\u68C0\u6D4B\u2026</div>";
+            return loadDisplays(post("/api/displays/rescan"));
         }
 
         function loadVolume() {
-            return send(""/Home/GetVolume"").then(data => {
-                volumeRange.value = clamp(data);
-                volumeValue.textContent = volumeRange.value + ""%"";
+            return get("/api/audio/volume").then(data => {
+                volumeRange.value = clamp(data.volume);
+                volumeValue.textContent = volumeRange.value + "%";
             }).catch(() => {});
         }
 
-        const sendVolume = throttle(value => post(""/Home/SetVolume"", { volume: value }).catch(() => {}), 150);
+        const sendVolume = throttle(value => post("/api/audio/volume", { value: value }).catch(() => {}), 150);
 
         function formatDuration(totalSeconds) {
             const h = Math.floor(totalSeconds / 3600);
             const m = Math.floor((totalSeconds % 3600) / 60);
             const s = totalSeconds % 60;
-            const pad = n => String(n).padStart(2, ""0"");
-            return (h > 0 ? h + "":"" + pad(m) : m) + "":"" + pad(s);
+            const pad = n => String(n).padStart(2, "0");
+            return (h > 0 ? h + ":" + pad(m) : m) + ":" + pad(s);
         }
 
         function formatClock(date) {
-            return String(date.getHours()).padStart(2, ""0"") + "":"" + String(date.getMinutes()).padStart(2, ""0"");
+            return String(date.getHours()).padStart(2, "0") + ":" + String(date.getMinutes()).padStart(2, "0");
         }
 
         function updateCountdown() {
             if (shutdownSeconds <= 0) {
-                timerState.classList.remove(""active"");
+                timerState.classList.remove("active");
                 return;
             }
-            timerState.classList.add(""active"");
-            timerRemaining.textContent = ""\u5269\u4F59 "" + formatDuration(shutdownSeconds);
-            timerAt.textContent = ""\u5C06\u4E8E "" + formatClock(new Date(Date.now() + shutdownSeconds * 1000)) + "" \u5173\u673A"";
+            timerState.classList.add("active");
+            timerRemaining.textContent = "\u5269\u4F59 " + formatDuration(shutdownSeconds);
+            timerAt.textContent = "\u5C06\u4E8E " + formatClock(new Date(Date.now() + shutdownSeconds * 1000)) + " \u5173\u673A";
         }
 
         function startCountdown(seconds) {
@@ -484,8 +482,14 @@ namespace PCDeviceManage
         function applyShutdown(minutes) {
             const normalized = Math.max(0, parseInt(minutes || 0, 10) || 0);
             const seconds = normalized * 60;
-            post(""/Home/TimingShutdown"", { seconds: seconds })
+            post("/api/power/schedule", { seconds: seconds })
                 .then(() => startCountdown(seconds))
+                .catch(() => {});
+        }
+
+        function cancelShutdown() {
+            api("DELETE", "/api/power/schedule")
+                .then(() => startCountdown(0))
                 .catch(() => {});
         }
 
@@ -493,40 +497,37 @@ namespace PCDeviceManage
             if (window.confirm(message)) post(url).catch(() => {});
         }
 
-        volumeRange.addEventListener(""input"", () => {
-            volumeValue.textContent = volumeRange.value + ""%"";
+        volumeRange.addEventListener("input", () => {
+            volumeValue.textContent = volumeRange.value + "%";
             sendVolume(volumeRange.value);
         });
 
-        document.querySelectorAll(""[data-minutes]"").forEach(button => {
-            button.addEventListener(""click"", () => applyShutdown(button.dataset.minutes));
+        document.querySelectorAll("[data-minutes]").forEach(button => {
+            button.addEventListener("click", () => applyShutdown(button.dataset.minutes));
         });
-        $(""applyShutdown"").addEventListener(""click"", () => {
+        $("applyShutdown").addEventListener("click", () => {
             const minutes = parseInt(shutdownInput.value, 10);
             if (!minutes || minutes <= 0) {
                 shutdownInput.focus();
                 return;
             }
             applyShutdown(minutes);
-            shutdownInput.value = """";
+            shutdownInput.value = "";
         });
-        shutdownInput.addEventListener(""keydown"", event => {
-            if (event.key === ""Enter"") $(""applyShutdown"").click();
+        shutdownInput.addEventListener("keydown", event => {
+            if (event.key === "Enter") $("applyShutdown").click();
         });
-        $(""cancelShutdown"").addEventListener(""click"", () => applyShutdown(0));
-        $(""rescanDisplays"").addEventListener(""click"", rescanDisplays);
-        $(""lockWindows"").addEventListener(""click"", () => post(""/Home/LockWindows"").catch(() => {}));
-        $(""shutdownNow"").addEventListener(""click"", () => confirmed(""\u786E\u5B9A\u7ACB\u5373\u5173\u673A\uFF1F"", ""/Home/WindowsShutdown""));
-        $(""restartNow"").addEventListener(""click"", () => confirmed(""\u786E\u5B9A\u7ACB\u5373\u91CD\u542F\uFF1F"", ""/Home/WindowsRestart""));
+        $("cancelShutdown").addEventListener("click", cancelShutdown);
+        $("rescanDisplays").addEventListener("click", rescanDisplays);
+        $("lockWindows").addEventListener("click", () => post("/api/power/lock").catch(() => {}));
+        $("shutdownNow").addEventListener("click", () => confirmed("\u786E\u5B9A\u7ACB\u5373\u5173\u673A\uFF1F", "/api/power/shutdown"));
+        $("restartNow").addEventListener("click", () => confirmed("\u786E\u5B9A\u7ACB\u5373\u91CD\u542F\uFF1F", "/api/power/restart"));
 
         loadDisplays();
         loadVolume();
-        send(""/Home/GetShutdownTimingVal"").then(data => {
-            const seconds = parseInt(data || 0, 10);
-            if (seconds > 0) startCountdown(seconds);
+        get("/api/power/schedule").then(data => {
+            if (data.remainingSeconds > 0) startCountdown(data.remainingSeconds);
         }).catch(() => {});
     </script>
 </body>
-</html>";
-    }
-}
+</html>

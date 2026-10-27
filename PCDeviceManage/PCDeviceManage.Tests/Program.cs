@@ -34,6 +34,7 @@ namespace PCDeviceManage.Tests
                 Test(nameof(SchedulerCancelPreventsShutdown), SchedulerCancelPreventsShutdown),
                 Test(nameof(SchedulerUsesWallClockAfterSleep), SchedulerUsesWallClockAfterSleep),
                 Test(nameof(WebServerSchedulesShutdown), WebServerSchedulesShutdown),
+                Test(nameof(WebServerServesStaticFilesAndErrors), WebServerServesStaticFilesAndErrors),
                 Test(nameof(FrpRestartDelayBacksOff), FrpRestartDelayBacksOff),
                 Test(nameof(FrpStatusIsParsedFromLog), FrpStatusIsParsedFromLog),
                 Test(nameof(FrpSkipsWhenNotConfiguredOrDisabled), FrpSkipsWhenNotConfiguredOrDisabled),
@@ -288,19 +289,44 @@ namespace PCDeviceManage.Tests
             }
         }
 
+        private static void WebServerServesStaticFilesAndErrors()
+        {
+            using (var server = new TestServer())
+            {
+                Assert(server.Send("GET", "/favicon.ico").StatusCode == HttpStatusCode.OK, "Expected the favicon to be served.");
+                Assert(server.Send("GET", "/login").StatusCode == HttpStatusCode.OK && server.LastBody.Contains("/api/login"), "Expected the embedded login page.");
+                Assert(server.Send("GET", "/api/displays").StatusCode == HttpStatusCode.Unauthorized && server.LastBody.Contains("\"ok\":false"), "Expected a JSON 401 for anonymous API calls.");
+
+                server.Send("POST", "/api/login", "token=" + Uri.EscapeDataString(TestServer.Token));
+                Assert(server.LastBody == "{\"ok\":true,\"data\":null}", "Expected the success envelope, got " + server.LastBody);
+                Assert(server.Send("GET", "/").StatusCode == HttpStatusCode.OK && server.LastBody.Contains("/api/power/schedule"), "Expected the embedded console page.");
+                Assert(server.Send("GET", "/home").StatusCode == HttpStatusCode.OK, "Expected the old /home address to still open the console.");
+                Assert(server.Send("GET", "/api/nothing").StatusCode == HttpStatusCode.NotFound && server.LastBody.Contains("\"ok\":false"), "Expected a JSON 404 for unknown APIs.");
+
+                HttpWebResponse wrongMethod = server.Send("PUT", "/api/power/schedule");
+                Assert(wrongMethod.StatusCode == HttpStatusCode.MethodNotAllowed, "Expected 405 for an unmapped method.");
+                Assert(wrongMethod.Headers["Allow"].Contains("DELETE") && wrongMethod.Headers["Allow"].Contains("GET"), "Expected the Allow header to list mapped methods.");
+            }
+        }
+
         private static void WebServerSchedulesShutdown()
         {
             using (var server = new TestServer())
             {
                 server.Send("POST", "/api/login", "token=" + Uri.EscapeDataString(TestServer.Token));
-                Assert(server.Send("POST", "/Home/TimingShutdown", "seconds=600").StatusCode == HttpStatusCode.OK, "Expected schedule to succeed.");
+                Assert(server.Send("POST", "/api/power/schedule", "seconds=600").StatusCode == HttpStatusCode.OK, "Expected schedule to succeed.");
                 Assert(server.Scheduler.Deadline.HasValue, "Expected scheduler to hold a deadline.");
 
-                server.Send("GET", "/Home/GetShutdownTimingVal");
-                int remaining = int.Parse(server.LastBody);
-                Assert(remaining > 590 && remaining <= 600, "Expected about 600 seconds remaining, got " + remaining);
+                server.Send("GET", "/api/power/schedule");
+                var state = Newtonsoft.Json.Linq.JObject.Parse(server.LastBody);
+                int remaining = (int)state["data"]["remainingSeconds"];
+                Assert((bool)state["ok"] && remaining > 590 && remaining <= 600, "Expected about 600 seconds remaining, got " + server.LastBody);
+                Assert(state["data"]["deadline"].Type == Newtonsoft.Json.Linq.JTokenType.Date || ((string)state["data"]["deadline"]).Length > 0, "Expected the deadline to be reported.");
 
-                Assert(server.Send("POST", "/Home/TimingShutdown", "seconds=0").StatusCode == HttpStatusCode.OK, "Expected cancel to succeed.");
+                Assert(server.Send("POST", "/api/power/schedule", "seconds=abc").StatusCode == HttpStatusCode.BadRequest, "Expected invalid seconds to return 400.");
+                Assert(server.LastBody.Contains("\"ok\":false"), "Expected an error envelope.");
+
+                Assert(server.Send("DELETE", "/api/power/schedule").StatusCode == HttpStatusCode.OK, "Expected cancel to succeed.");
                 Assert(!server.Scheduler.Deadline.HasValue && server.ShutdownCalls == 0, "Expected schedule to be cancelled without shutting down.");
             }
         }
@@ -625,7 +651,7 @@ namespace PCDeviceManage.Tests
                 HttpWebResponse page = server.Send("GET", "/");
                 Assert(page.StatusCode == HttpStatusCode.Redirect && page.Headers["Location"].EndsWith("/login"), "Expected anonymous page request to redirect to /login.");
                 Assert(server.Send("GET", "/login").StatusCode == HttpStatusCode.OK, "Expected login page to be public.");
-                Assert(server.Send("GET", "/Home/GetShutdownTimingVal").StatusCode == HttpStatusCode.Unauthorized, "Expected anonymous API request to be rejected.");
+                Assert(server.Send("GET", "/api/power/schedule").StatusCode == HttpStatusCode.Unauthorized, "Expected anonymous API request to be rejected.");
                 Assert(server.Send("POST", "/api/login", "token=wrong").StatusCode == HttpStatusCode.Unauthorized, "Expected wrong token to be rejected.");
                 Assert(server.Send("GET", "/api/login").StatusCode == HttpStatusCode.MethodNotAllowed, "Expected GET login to be rejected.");
 
@@ -635,7 +661,7 @@ namespace PCDeviceManage.Tests
                 Assert(setCookie.Contains("HttpOnly") && setCookie.Contains("SameSite=Strict"), "Expected a hardened session cookie.");
 
                 Assert(server.Send("GET", "/").StatusCode == HttpStatusCode.OK, "Expected page to load after login.");
-                Assert(server.Send("GET", "/Home/GetShutdownTimingVal").StatusCode == HttpStatusCode.OK, "Expected API to work after login.");
+                Assert(server.Send("GET", "/api/power/schedule").StatusCode == HttpStatusCode.OK, "Expected API to work after login.");
             }
         }
 
@@ -644,9 +670,9 @@ namespace PCDeviceManage.Tests
             using (var server = new TestServer())
             {
                 var headers = new Dictionary<string, string> { { TokenAuthenticator.TokenHeaderName, TestServer.Token } };
-                Assert(server.Send("GET", "/Home/GetShutdownTimingVal", null, headers).StatusCode == HttpStatusCode.OK, "Expected token header to authenticate.");
+                Assert(server.Send("GET", "/api/power/schedule", null, headers).StatusCode == HttpStatusCode.OK, "Expected token header to authenticate.");
                 headers[TokenAuthenticator.TokenHeaderName] = "wrong";
-                Assert(server.Send("GET", "/Home/GetShutdownTimingVal", null, headers).StatusCode == HttpStatusCode.Unauthorized, "Expected wrong token header to be rejected.");
+                Assert(server.Send("GET", "/api/power/schedule", null, headers).StatusCode == HttpStatusCode.Unauthorized, "Expected wrong token header to be rejected.");
             }
         }
 
@@ -669,18 +695,19 @@ namespace PCDeviceManage.Tests
             {
                 server.Send("POST", "/api/login", "token=" + Uri.EscapeDataString(TestServer.Token));
 
-                // 只用 seconds=0（取消定时关机）验证，不会真的触发关机。
-                Assert(server.Send("GET", "/Home/TimingShutdown?seconds=0").StatusCode == HttpStatusCode.MethodNotAllowed, "Expected GET state change to be rejected.");
-                Assert(server.Send("GET", "/Home/LockWindows").StatusCode == HttpStatusCode.MethodNotAllowed, "Expected GET lock to be rejected.");
-                Assert(server.Send("POST", "/Home/TimingShutdown", "seconds=0", null, false).StatusCode == HttpStatusCode.Forbidden, "Expected POST without CSRF header to be rejected.");
+                // 只用取消定时关机（seconds=0 / DELETE）验证写操作，不会真的锁屏或关机。
+                Assert(server.Send("GET", "/api/power/lock").StatusCode == HttpStatusCode.MethodNotAllowed, "Expected GET lock to be rejected.");
+                Assert(server.Send("GET", "/api/power/shutdown").StatusCode == HttpStatusCode.MethodNotAllowed, "Expected GET shutdown to be rejected.");
+                Assert(server.Send("POST", "/api/power/schedule", "seconds=0", null, false).StatusCode == HttpStatusCode.Forbidden, "Expected POST without CSRF header to be rejected.");
+                Assert(server.Send("DELETE", "/api/power/schedule", null, null, false).StatusCode == HttpStatusCode.Forbidden, "Expected DELETE without CSRF header to be rejected.");
                 Assert(server.Send("POST", "/api/logout", null, null, false).StatusCode == HttpStatusCode.Forbidden, "Expected logout without CSRF header to be rejected.");
 
                 var foreign = new Dictionary<string, string> { { "Origin", "http://evil.example" } };
-                Assert(server.Send("POST", "/Home/TimingShutdown", "seconds=0", foreign).StatusCode == HttpStatusCode.Forbidden, "Expected cross-origin POST to be rejected.");
+                Assert(server.Send("POST", "/api/power/schedule", "seconds=0", foreign).StatusCode == HttpStatusCode.Forbidden, "Expected cross-origin POST to be rejected.");
 
-                Assert(server.Send("POST", "/Home/TimingShutdown", "seconds=0").StatusCode == HttpStatusCode.OK, "Expected trusted POST to succeed.");
+                Assert(server.Send("POST", "/api/power/schedule", "seconds=0").StatusCode == HttpStatusCode.OK, "Expected trusted POST to succeed.");
                 Assert(server.Send("POST", "/api/logout").StatusCode == HttpStatusCode.OK, "Expected logout to succeed.");
-                Assert(server.Send("GET", "/Home/GetShutdownTimingVal").StatusCode == HttpStatusCode.Unauthorized, "Expected session to be cleared by logout.");
+                Assert(server.Send("GET", "/api/power/schedule").StatusCode == HttpStatusCode.Unauthorized, "Expected session to be cleared by logout.");
             }
         }
 
@@ -688,7 +715,7 @@ namespace PCDeviceManage.Tests
         {
             public const string Token = "integration-token";
 
-            private readonly LocalWebServer _server;
+            private readonly WebServer _server;
             private readonly MonitorRegistry _registry;
             private readonly CookieContainer _cookies = new CookieContainer();
             private readonly int _port;
@@ -708,7 +735,7 @@ namespace PCDeviceManage.Tests
                 _port = ((IPEndPoint)listener.LocalEndpoint).Port;
                 listener.Stop();
 
-                _server = new LocalWebServer(
+                _server = new WebServer(
                     _registry,
                     new AudioService(),
                     new WindowsManage(),
@@ -726,7 +753,7 @@ namespace PCDeviceManage.Tests
                 request.Method = method;
                 request.AllowAutoRedirect = false;
                 request.CookieContainer = _cookies;
-                if (method == "POST" && csrfHeader)
+                if (method != "GET" && csrfHeader)
                 {
                     request.Headers[RequestGuard.CsrfHeaderName] = "1";
                 }
@@ -747,7 +774,7 @@ namespace PCDeviceManage.Tests
                         stream.Write(body, 0, body.Length);
                     }
                 }
-                else if (method == "POST")
+                else if (method != "GET")
                 {
                     request.ContentLength = 0;
                 }

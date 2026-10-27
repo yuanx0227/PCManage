@@ -1,12 +1,8 @@
-namespace PCDeviceManage
-{
-    internal static class LoginPage
-    {
-        public const string Html = @"<!DOCTYPE html>
-<html lang=""zh-CN"">
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
-    <meta charset=""utf-8"" />
-    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>&#x767B;&#x5F55; - &#x7535;&#x8111;&#x63A7;&#x5236;</title>
     <style>
         :root {
@@ -38,7 +34,7 @@ namespace PCDeviceManage
             margin: 0;
             color: var(--text);
             background: var(--bg);
-            font-family: ""Segoe UI"", ""Microsoft YaHei UI"", ""PingFang SC"", system-ui, sans-serif;
+            font-family: "Segoe UI", "Microsoft YaHei UI", "PingFang SC", system-ui, sans-serif;
             font-size: 15px;
             line-height: 1.5;
         }
@@ -112,43 +108,41 @@ namespace PCDeviceManage
     </style>
 </head>
 <body>
-    <div class=""page"">
+    <div class="page">
         <h1>&#x7535;&#x8111;&#x63A7;&#x5236;</h1>
-        <form id=""loginForm"">
-            <label for=""token"">&#x8BBF;&#x95EE;&#x4EE4;&#x724C;</label>
-            <input id=""token"" name=""token"" type=""password"" autocomplete=""current-password"" required autofocus />
-            <button type=""submit"">&#x767B;&#x5F55;</button>
-            <p class=""error"" id=""error""></p>
+        <form id="loginForm">
+            <label for="token">&#x8BBF;&#x95EE;&#x4EE4;&#x724C;</label>
+            <input id="token" name="token" type="password" autocomplete="current-password" required autofocus />
+            <button type="submit">&#x767B;&#x5F55;</button>
+            <p class="error" id="error"></p>
         </form>
-        <p class=""hint"">&#x4EE4;&#x724C;&#x4FDD;&#x5B58;&#x5728;&#x7535;&#x8111;&#x7684; %LocalAppData%\PCManage\settings.json &#x7684; accessToken &#x4E2D;&#x3002;</p>
+        <p class="hint">&#x4EE4;&#x724C;&#x4FDD;&#x5B58;&#x5728;&#x7535;&#x8111;&#x7684; %LocalAppData%\PCManage\settings.json &#x7684; accessToken &#x4E2D;&#x3002;</p>
     </div>
 
     <script>
-        const form = document.getElementById(""loginForm"");
-        const error = document.getElementById(""error"");
+        const form = document.getElementById("loginForm");
+        const error = document.getElementById("error");
 
-        form.addEventListener(""submit"", event => {
+        form.addEventListener("submit", event => {
             event.preventDefault();
-            error.textContent = """";
-            fetch(""/api/login"", {
-                method: ""POST"",
-                headers: { ""Content-Type"": ""application/x-www-form-urlencoded"", ""X-PCM-Request"": ""1"" },
+            error.textContent = "";
+            fetch("/api/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded", "X-PCM-Request": "1" },
                 body: new URLSearchParams(new FormData(form))
             }).then(response => {
                 if (response.ok) {
-                    location.replace(""/"");
+                    location.replace("/");
                 } else if (response.status === 429) {
-                    const wait = response.headers.get(""Retry-After"") || ""?"";
-                    error.textContent = ""尝试次数过多，请 "" + wait + "" 秒后再试"";
+                    const wait = response.headers.get("Retry-After") || "?";
+                    error.textContent = "尝试次数过多，请 " + wait + " 秒后再试";
                 } else {
-                    error.textContent = ""令牌不正确"";
+                    error.textContent = "令牌不正确";
                 }
             }).catch(() => {
-                error.textContent = ""连接失败"";
+                error.textContent = "连接失败";
             });
         });
     </script>
 </body>
-</html>";
-    }
-}
+</html>

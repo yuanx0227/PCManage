@@ -23,7 +23,19 @@ PCManage is a lightweight Windows device-control tool that exposes a local web c
 
 日志写在 `%LocalAppData%\PCManage\Log`。
 
-脚本或快捷指令可以在请求头 `X-Access-Token` 中携带令牌；会改变状态的接口（锁屏、关机、亮度、音量等）只接受 POST，并且必须带请求头 `X-PCM-Request: 1`。
+## 接口
+脚本或快捷指令可以在请求头 `X-Access-Token` 中携带令牌。除 GET 外的请求都必须带请求头 `X-PCM-Request: 1`，参数用表单（`application/x-www-form-urlencoded`）传递。返回值统一为 `{"ok": true, "data": ...}` 或 `{"ok": false, "error": "..."}`。
+
+| 方法 | 地址 | 参数 | 说明 |
+|---|---|---|---|
+| GET | `/api/displays` | `refresh=true` 时重新读取硬件 | 显示器列表 `[{id, name, isInternal, brightness, supported}]` |
+| POST | `/api/displays/{id}/brightness` | `value` 0–100 | 设置某台显示器的亮度 |
+| POST | `/api/displays/rescan` | | 重新检测显示器 |
+| GET / POST | `/api/audio/volume` | POST：`value` 0–100 | 读取 / 设置音量 |
+| POST | `/api/power/lock`、`/api/power/shutdown`、`/api/power/restart` | | 锁屏 / 关机 / 重启 |
+| GET | `/api/power/schedule` | | 定时关机状态 `{remainingSeconds, deadline}` |
+| POST | `/api/power/schedule` | `seconds` | 在指定秒数后关机 |
+| DELETE | `/api/power/schedule` | | 取消定时关机 |
 
 ## 公网访问（frp，可选）
 仓库不再包含 frp 的程序和服务器配置，需要时按以下步骤配置：

@@ -87,9 +87,7 @@
     <Compile Include="Manage\ShutdownScheduler.cs" />
     <Compile Include="Manage\MonitorRegistry.cs" />
     <Compile Include="Manage\SystemMonitorEnumerator.cs" />
-    <Compile Include="Web\IndexPage.cs" />
-    <Compile Include="Web\LocalWebServer.cs" />
-    <Compile Include="Web\LoginPage.cs" />
+    <Compile Include="Web\WebServer.cs" />
     <Compile Include="Web\RequestGuard.cs" />
     <Compile Include="Web\TokenAuthenticator.cs" />
     <Compile Include="Monitor\DdcMonitorItem.cs" />
@@ -192,6 +190,12 @@
   <ItemGroup>
     <EmbeddedResource Include="ico\app.ico">
       <LogicalName>PCDeviceManage.app.ico</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Web\wwwroot\index.html">
+      <LogicalName>PCDeviceManage.wwwroot.index.html</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Web\wwwroot\login.html">
+      <LogicalName>PCDeviceManage.wwwroot.login.html</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

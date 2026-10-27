@@ -18,7 +18,7 @@ namespace PCDeviceManage
 
         private static ILog _log;
         private static AppSettings _settings;
-        private static LocalWebServer _webServer;
+        private static WebServer _webServer;
         private static MonitorRegistry _monitorRegistry;
         private static ShutdownScheduler _shutdownScheduler;
         private static FrpTunnel _frpTunnel;
@@ -111,7 +111,7 @@ namespace PCDeviceManage
                     return false;
                 }
 
-                _webServer = new LocalWebServer(_monitorRegistry, new AudioService(), windowsManage, _shutdownScheduler,
+                _webServer = new WebServer(_monitorRegistry, new AudioService(), windowsManage, _shutdownScheduler,
                     new TokenAuthenticator(_settings.AccessToken), port, _settings.WebHost, _log);
                 return _webServer.Start();
             }
