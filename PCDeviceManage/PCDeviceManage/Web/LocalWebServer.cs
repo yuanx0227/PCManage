@@ -1,7 +1,9 @@
 using log4net;
 using System;
+using System.Collections.Specialized;
+using System.Globalization;
+using System.IO;
 using System.Net;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,6 +14,7 @@ namespace PCDeviceManage
         private readonly DisplayManage _displayManage;
         private readonly AudioManage _audioManage;
         private readonly WindowsManage _windowsManage;
+        private readonly TokenAuthenticator _authenticator;
         private readonly int _port;
         private readonly string _host;
         private readonly ILog _log;
@@ -27,6 +30,7 @@ namespace PCDeviceManage
             DisplayManage displayManage,
             AudioManage audioManage,
             WindowsManage windowsManage,
+            TokenAuthenticator authenticator,
             int port,
             string host,
             ILog log)
@@ -34,6 +38,7 @@ namespace PCDeviceManage
             _displayManage = displayManage;
             _audioManage = audioManage;
             _windowsManage = windowsManage;
+            _authenticator = authenticator ?? throw new ArgumentNullException(nameof(authenticator));
             _port = port;
             _host = string.IsNullOrWhiteSpace(host) ? "127.0.0.1" : host.Trim();
             _log = log;
@@ -123,16 +128,51 @@ namespace PCDeviceManage
                 }
 
                 string path = context.Request.Url.AbsolutePath.TrimEnd('/').ToLowerInvariant();
-                if (string.IsNullOrEmpty(path) || path == "/home" || path == "/home/index")
-                {
-                    WriteHtml(context.Response, IndexPage.Html);
-                    return;
-                }
-
                 if (path == "/favicon.ico")
                 {
                     context.Response.StatusCode = 204;
                     context.Response.Close();
+                    return;
+                }
+
+                if (path == "/login")
+                {
+                    WriteHtml(context.Response, LoginPage.Html);
+                    return;
+                }
+
+                if (path == "/api/login")
+                {
+                    Login(context);
+                    return;
+                }
+
+                if (path == "/api/logout")
+                {
+                    context.Response.AppendHeader("Set-Cookie", TokenAuthenticator.SessionCookieName + "=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict");
+                    WriteText(context.Response, "true");
+                    return;
+                }
+
+                bool isPage = string.IsNullOrEmpty(path) || path == "/home" || path == "/home/index";
+                if (!IsAuthenticated(context.Request))
+                {
+                    if (isPage)
+                    {
+                        context.Response.Redirect("/login");
+                        context.Response.Close();
+                    }
+                    else
+                    {
+                        context.Response.StatusCode = 401;
+                        WriteText(context.Response, "Unauthorized");
+                    }
+                    return;
+                }
+
+                if (isPage)
+                {
+                    WriteHtml(context.Response, IndexPage.Html);
                     return;
                 }
 
@@ -181,6 +221,92 @@ namespace PCDeviceManage
             }
         }
 
+        private bool IsAuthenticated(HttpListenerRequest request)
+        {
+            Cookie cookie = request.Cookies[TokenAuthenticator.SessionCookieName];
+            if (cookie != null && _authenticator.IsValidSession(cookie.Value))
+            {
+                return true;
+            }
+
+            // 供脚本、快捷指令等不方便处理 Cookie 的客户端使用，失败同样计入锁定次数。
+            string headerToken = request.Headers[TokenAuthenticator.TokenHeaderName];
+            return !string.IsNullOrEmpty(headerToken) && _authenticator.TryLogin(headerToken).Status == LoginStatus.Succeeded;
+        }
+
+        private void Login(HttpListenerContext context)
+        {
+            if (!context.Request.HttpMethod.Equals("POST", StringComparison.OrdinalIgnoreCase))
+            {
+                context.Response.StatusCode = 405;
+                context.Response.AppendHeader("Allow", "POST");
+                WriteText(context.Response, "Method Not Allowed");
+                return;
+            }
+
+            LoginResult result = _authenticator.TryLogin(ReadForm(context.Request)["token"]);
+            switch (result.Status)
+            {
+                case LoginStatus.Succeeded:
+                    string secure = IsHttps(context.Request) ? "; Secure" : string.Empty;
+                    context.Response.AppendHeader("Set-Cookie",
+                        TokenAuthenticator.SessionCookieName + "=" + _authenticator.SessionValue +
+                        "; Path=/; Max-Age=2592000; HttpOnly; SameSite=Strict" + secure);
+                    _log.Info("Login succeeded. Remote: " + context.Request.RemoteEndPoint);
+                    WriteText(context.Response, "true");
+                    break;
+                case LoginStatus.Locked:
+                    int seconds = (int)Math.Ceiling(result.RetryAfter.TotalSeconds);
+                    _log.Warn("Login locked for " + seconds + "s. Remote: " + context.Request.RemoteEndPoint);
+                    context.Response.StatusCode = 429;
+                    context.Response.AppendHeader("Retry-After", seconds.ToString(CultureInfo.InvariantCulture));
+                    WriteText(context.Response, "Too Many Requests");
+                    break;
+                default:
+                    _log.Warn("Login failed. Remote: " + context.Request.RemoteEndPoint);
+                    context.Response.StatusCode = 401;
+                    WriteText(context.Response, "Unauthorized");
+                    break;
+            }
+        }
+
+        private static bool IsHttps(HttpListenerRequest request)
+        {
+            return request.IsSecureConnection ||
+                string.Equals(request.Headers["X-Forwarded-Proto"], "https", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static NameValueCollection ReadForm(HttpListenerRequest request)
+        {
+            var form = new NameValueCollection(StringComparer.OrdinalIgnoreCase);
+            if (!request.HasEntityBody)
+            {
+                return form;
+            }
+
+            string body;
+            using (var reader = new StreamReader(request.InputStream, request.ContentEncoding ?? Encoding.UTF8))
+            {
+                char[] buffer = new char[8192];
+                int length = reader.ReadBlock(buffer, 0, buffer.Length);
+                body = new string(buffer, 0, length);
+            }
+
+            foreach (string pair in body.Split('&'))
+            {
+                if (pair.Length == 0)
+                {
+                    continue;
+                }
+
+                int index = pair.IndexOf('=');
+                string key = index < 0 ? pair : pair.Substring(0, index);
+                string value = index < 0 ? string.Empty : pair.Substring(index + 1);
+                form[Uri.UnescapeDataString(key.Replace('+', ' '))] = Uri.UnescapeDataString(value.Replace('+', ' '));
+            }
+            return form;
+        }
+
         private bool SetBrightness(HttpListenerRequest request)
         {
             int brightness;
@@ -209,8 +335,7 @@ namespace PCDeviceManage
         private string LockWindows(HttpListenerRequest request)
         {
             _windowsManage.LockWindows();
-            string ip = GetIp(request);
-            _log.Info("Lock command sent. Client IP: " + ip + " Mac: " + GetMac(ip));
+            _log.Info("Lock command sent. Remote: " + request.RemoteEndPoint);
             return "true";
         }
 
@@ -276,60 +401,6 @@ namespace PCDeviceManage
                 int remaining = _shutdownTimingVal == 0 ? 0 : _shutdownTimingVal - _elapsedSeconds;
                 return remaining.ToString();
             }
-        }
-
-        private string GetIp(HttpListenerRequest request)
-        {
-            string customerIp = request.Headers["Cdn-Src-Ip"];
-            if (!string.IsNullOrWhiteSpace(customerIp))
-            {
-                return customerIp;
-            }
-
-            customerIp = request.Headers["X-Forwarded-For"];
-            if (!string.IsNullOrWhiteSpace(customerIp))
-            {
-                int commaIndex = customerIp.IndexOf(',');
-                return commaIndex > 0 ? customerIp.Substring(0, commaIndex).Trim() : customerIp;
-            }
-
-            return request.RemoteEndPoint == null ? string.Empty : request.RemoteEndPoint.Address.ToString();
-        }
-
-        [DllImport("Iphlpapi.dll")]
-        private static extern int SendARP(Int32 destIp, Int32 srcIp, ref Int64 macAddr, ref Int32 phyAddrLen);
-
-        [DllImport("Ws2_32.dll")]
-        private static extern Int32 inet_addr(string ipaddr);
-
-        private string GetMac(string remoteIp)
-        {
-            StringBuilder macAddress = new StringBuilder();
-            try
-            {
-                Int32 remote = inet_addr(remoteIp);
-                Int64 macInfo = new Int64();
-                Int32 length = 6;
-                SendARP(remote, 0, ref macInfo, ref length);
-                string temp = Convert.ToString(macInfo, 16).PadLeft(12, '0').ToUpper();
-                int x = 12;
-                for (int i = 0; i < 6; i++)
-                {
-                    if (i == 5)
-                    {
-                        macAddress.Append(temp.Substring(x - 2, 2));
-                    }
-                    else
-                    {
-                        macAddress.Append(temp.Substring(x - 2, 2) + "-");
-                    }
-                    x -= 2;
-                }
-            }
-            catch
-            {
-            }
-            return macAddress.ToString();
         }
 
         private static void WriteHtml(HttpListenerResponse response, string content)

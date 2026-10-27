@@ -298,6 +298,7 @@ namespace PCDeviceManage
 
         function requestText(url) {
             return fetch(url, { cache: ""no-store"" }).then(response => {
+                if (response.status === 401) location.replace(""/login"");
                 if (!response.ok) throw new Error(response.status);
                 return response.text();
             });

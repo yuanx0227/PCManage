@@ -86,7 +86,7 @@ namespace PCDeviceManage
                     _displayDeviceCache.Start();
                 }
 
-                _webServer = new LocalWebServer(new DisplayManage(_displayDeviceCache), new AudioManage(), new WindowsManage(), port, host, _log);
+                _webServer = new LocalWebServer(new DisplayManage(_displayDeviceCache), new AudioManage(), new WindowsManage(), CreateAuthenticator(), port, host, _log);
                 return _webServer.Start();
             }
             catch (Exception ex)
@@ -94,6 +94,26 @@ namespace PCDeviceManage
                 _log.Error($"开放Web端口{port}失败", ex);
                 return false;
             }
+        }
+
+        static TokenAuthenticator CreateAuthenticator()
+        {
+            string tokenFile = TokenAuthenticator.DefaultTokenFilePath;
+            bool created;
+            string token = TokenAuthenticator.LoadOrCreateToken(ConfigurationManager.AppSettings["AccessToken"], tokenFile, out created);
+            if (created)
+            {
+                _log.Warn("已生成访问令牌并保存到 " + tokenFile + "，打开控制台时在登录页输入该令牌。");
+            }
+            else if (string.IsNullOrWhiteSpace(ConfigurationManager.AppSettings["AccessToken"]))
+            {
+                _log.Info("访问令牌读取自 " + tokenFile);
+            }
+            else
+            {
+                _log.Info("访问令牌读取自 App.config 的 AccessToken。");
+            }
+            return new TokenAuthenticator(token);
         }
 
         static int ReadIntSetting(string key, int defaultValue)

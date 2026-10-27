@@ -1,0 +1,154 @@
+namespace PCDeviceManage
+{
+    internal static class LoginPage
+    {
+        public const string Html = @"<!DOCTYPE html>
+<html lang=""zh-CN"">
+<head>
+    <meta charset=""utf-8"" />
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"" />
+    <title>&#x767B;&#x5F55; - &#x7535;&#x8111;&#x63A7;&#x5236;</title>
+    <style>
+        :root {
+            color-scheme: light dark;
+            --bg: #f4f5f7;
+            --card: #ffffff;
+            --text: #1f2328;
+            --muted: #6b7280;
+            --line: #e3e5e8;
+            --accent: #2563eb;
+            --danger: #c62828;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #17181a;
+                --card: #212225;
+                --text: #e6e7e9;
+                --muted: #9a9ea6;
+                --line: #33353a;
+                --accent: #5b8def;
+                --danger: #ef6b6b;
+            }
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            color: var(--text);
+            background: var(--bg);
+            font-family: ""Segoe UI"", ""Microsoft YaHei UI"", ""PingFang SC"", system-ui, sans-serif;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .page {
+            width: min(400px, 100%);
+            margin: 0 auto;
+            padding: 64px 16px 32px;
+        }
+
+        h1 {
+            margin: 0 0 16px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        form {
+            padding: 16px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: var(--card);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        input {
+            width: 100%;
+            height: 38px;
+            margin-bottom: 12px;
+            padding: 0 10px;
+            color: var(--text);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--card);
+            font: inherit;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
+
+        button {
+            width: 100%;
+            height: 38px;
+            color: #fff;
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            background: var(--accent);
+            cursor: pointer;
+            font: inherit;
+        }
+
+        .error {
+            min-height: 1.5em;
+            margin: 10px 0 0;
+            color: var(--danger);
+            font-size: 13px;
+        }
+
+        .hint {
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class=""page"">
+        <h1>&#x7535;&#x8111;&#x63A7;&#x5236;</h1>
+        <form id=""loginForm"">
+            <label for=""token"">&#x8BBF;&#x95EE;&#x4EE4;&#x724C;</label>
+            <input id=""token"" name=""token"" type=""password"" autocomplete=""current-password"" required autofocus />
+            <button type=""submit"">&#x767B;&#x5F55;</button>
+            <p class=""error"" id=""error""></p>
+        </form>
+        <p class=""hint"">&#x4EE4;&#x724C;&#x4FDD;&#x5B58;&#x5728;&#x7535;&#x8111;&#x7684; %LocalAppData%\PCManage\access_token &#x6587;&#x4EF6;&#x4E2D;&#xFF0C;&#x4E5F;&#x53EF;&#x4EE5;&#x5728; App.config &#x7684; AccessToken &#x4E2D;&#x6307;&#x5B9A;&#x3002;</p>
+    </div>
+
+    <script>
+        const form = document.getElementById(""loginForm"");
+        const error = document.getElementById(""error"");
+
+        form.addEventListener(""submit"", event => {
+            event.preventDefault();
+            error.textContent = """";
+            fetch(""/api/login"", {
+                method: ""POST"",
+                headers: { ""Content-Type"": ""application/x-www-form-urlencoded"" },
+                body: new URLSearchParams(new FormData(form))
+            }).then(response => {
+                if (response.ok) {
+                    location.replace(""/"");
+                } else if (response.status === 429) {
+                    const wait = response.headers.get(""Retry-After"") || ""?"";
+                    error.textContent = ""尝试次数过多，请 "" + wait + "" 秒后再试"";
+                } else {
+                    error.textContent = ""令牌不正确"";
+                }
+            }).catch(() => {
+                error.textContent = ""连接失败"";
+            });
+        });
+    </script>
+</body>
+</html>";
+    }
+}
