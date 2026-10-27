@@ -8,528 +8,481 @@ namespace PCDeviceManage
     <meta http-equiv=""Content-Type"" content=""text/html; charset=utf-8"" />
     <meta charset=""utf-8"" />
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"" />
-    <title>PC Control Console</title>
+    <title>&#x7535;&#x8111;&#x63A7;&#x5236;</title>
     <style>
         :root {
             color-scheme: light dark;
-            --bg: #eef3f7;
-            --panel: rgba(255, 255, 255, 0.86);
-            --panel-solid: #ffffff;
-            --text: #10212f;
-            --muted: #5d6b78;
-            --line: rgba(56, 87, 112, 0.18);
-            --accent: #00a6b4;
-            --accent-strong: #007989;
-            --ok: #35a853;
-            --danger: #d54848;
-            --shadow: 0 18px 42px rgba(27, 59, 82, 0.16);
-            --track: #d5e2ea;
+            --bg: #f4f5f7;
+            --card: #ffffff;
+            --text: #1f2328;
+            --muted: #6b7280;
+            --line: #e3e5e8;
+            --accent: #2563eb;
+            --danger: #c62828;
+            --ok: #2e7d32;
         }
 
         @media (prefers-color-scheme: dark) {
             :root {
-                --bg: #081117;
-                --panel: rgba(13, 25, 34, 0.82);
-                --panel-solid: #0d1922;
-                --text: #e8f5f7;
-                --muted: #8ca3ad;
-                --line: rgba(126, 212, 221, 0.18);
-                --accent: #33d6c8;
-                --accent-strong: #7df3df;
-                --ok: #76e39a;
-                --danger: #ff6d6d;
-                --shadow: 0 22px 52px rgba(0, 0, 0, 0.38);
-                --track: #1d3742;
+                --bg: #17181a;
+                --card: #212225;
+                --text: #e6e7e9;
+                --muted: #9a9ea6;
+                --line: #33353a;
+                --accent: #5b8def;
+                --danger: #ef6b6b;
+                --ok: #6cc070;
             }
         }
 
         * { box-sizing: border-box; }
 
         body {
-            min-height: 100vh;
             margin: 0;
             color: var(--text);
-            font-family: Bahnschrift, ""Segoe UI Variable"", ""Microsoft YaHei UI"", sans-serif;
-            background:
-                radial-gradient(circle at 10% 10%, rgba(0, 166, 180, 0.18), transparent 32rem),
-                radial-gradient(circle at 86% 4%, rgba(53, 168, 83, 0.12), transparent 26rem),
-                linear-gradient(135deg, var(--bg), var(--bg));
+            background: var(--bg);
+            font-family: ""Segoe UI"", ""Microsoft YaHei UI"", ""PingFang SC"", system-ui, sans-serif;
+            font-size: 15px;
+            line-height: 1.5;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        body::before {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            content: """";
-            background-image:
-                linear-gradient(var(--line) 1px, transparent 1px),
-                linear-gradient(90deg, var(--line) 1px, transparent 1px);
-            background-size: 44px 44px;
-            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent 76%);
-        }
-
-        .shell {
-            position: relative;
-            width: min(1180px, calc(100% - 32px));
+        .page {
+            width: min(560px, 100%);
             margin: 0 auto;
-            padding: 28px 0 34px;
+            padding: 20px 16px 32px;
         }
 
-        .topbar {
+        header {
             display: flex;
-            align-items: end;
+            align-items: baseline;
             justify-content: space-between;
-            gap: 18px;
-            margin-bottom: 22px;
+            gap: 12px;
+            margin-bottom: 16px;
         }
-
-        .eyebrow {
-            margin: 0 0 8px;
-            color: var(--accent-strong);
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.18em;
-        }
-
-        h1, h2, p { margin-top: 0; }
 
         h1 {
-            margin-bottom: 0;
-            font-size: clamp(32px, 5vw, 58px);
-            line-height: 0.98;
-            font-weight: 800;
-        }
-
-        h2 {
-            margin-bottom: 4px;
+            margin: 0;
             font-size: 20px;
-            font-weight: 760;
+            font-weight: 600;
         }
 
         .status {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            min-width: 196px;
-            padding: 11px 14px;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            background: var(--panel);
-            box-shadow: var(--shadow);
+            gap: 6px;
             color: var(--muted);
             font-size: 13px;
         }
 
-        .dot {
-            width: 9px;
-            height: 9px;
-            border-radius: 999px;
-            background: var(--ok);
-            box-shadow: 0 0 18px var(--ok);
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: minmax(0, 1.3fr) minmax(300px, 0.7fr);
-            gap: 16px;
-        }
-
-        .panel {
-            position: relative;
-            overflow: hidden;
-            min-height: 214px;
-            padding: 20px;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            background: var(--panel);
-            box-shadow: var(--shadow);
-            backdrop-filter: blur(18px);
-        }
-
-        .panel::after {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
+        .status::before {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--muted);
             content: """";
-            background: linear-gradient(135deg, rgba(255,255,255,0.16), transparent 26%, transparent 72%, rgba(0,166,180,0.08));
         }
 
-        .panel-wide { grid-row: span 2; }
+        .status.ok::before { background: var(--ok); }
+        .status.error::before { background: var(--danger); }
 
-        .section-head {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            align-items: start;
-            justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 18px;
-        }
-
-        .section-code {
-            color: var(--accent-strong);
-            font-size: 11px;
-            font-weight: 800;
-            letter-spacing: 0.16em;
-        }
-
-        .muted {
-            color: var(--muted);
-            font-size: 13px;
-        }
-
-        .device-grid {
-            position: relative;
-            z-index: 1;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-            gap: 12px;
-        }
-
-        .device-card {
+        section {
+            margin-bottom: 12px;
             padding: 16px;
             border: 1px solid var(--line);
-            border-radius: 8px;
-            background: color-mix(in srgb, var(--panel-solid) 74%, transparent);
+            border-radius: 10px;
+            background: var(--card);
         }
 
-        .device-name {
-            margin: 0 0 6px;
-            font-size: 17px;
-            font-weight: 760;
+        h2 {
+            margin: 0 0 12px;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 600;
         }
 
-        .device-meta {
+        .row + .row {
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid var(--line);
+        }
+
+        .row-label {
             display: flex;
             justify-content: space-between;
             gap: 8px;
-            margin-bottom: 16px;
-            color: var(--muted);
-            font-size: 12px;
+            margin-bottom: 6px;
         }
 
-        .empty {
-            padding: 26px;
-            border: 1px dashed var(--line);
-            border-radius: 8px;
+        .row-label .tag {
             color: var(--muted);
-            text-align: center;
+            font-size: 13px;
         }
 
-        .meter-row {
-            display: grid;
-            grid-template-columns: 1fr auto;
+        .slider {
+            display: flex;
             align-items: center;
             gap: 12px;
         }
 
+        .slider input { flex: 1; }
+
         .value {
-            min-width: 52px;
-            color: var(--accent-strong);
+            min-width: 3em;
+            color: var(--muted);
             font-variant-numeric: tabular-nums;
-            font-weight: 800;
             text-align: right;
         }
 
         input[type=""range""] {
-            width: 100%;
+            height: 28px;
+            margin: 0;
             accent-color: var(--accent);
         }
 
         input[type=""number""] {
             width: 100%;
-            padding: 10px 12px;
+            min-width: 0;
+            height: 38px;
+            padding: 0 10px;
             color: var(--text);
             border: 1px solid var(--line);
             border-radius: 8px;
+            background: var(--card);
+            font: inherit;
+        }
+
+        input[type=""number""]:focus {
+            border-color: var(--accent);
             outline: none;
-            background: var(--panel-solid);
         }
 
-        .stack {
-            position: relative;
-            z-index: 1;
+        .empty {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .presets {
             display: grid;
-            gap: 14px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+            margin-bottom: 10px;
         }
 
-        .button-row {
+        .presets button { padding: 0 4px; }
+
+        .inline {
             display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
         }
+
+        .inline input { flex: 1; }
 
         button {
-            min-height: 42px;
+            height: 38px;
             padding: 0 14px;
             color: var(--text);
             border: 1px solid var(--line);
             border-radius: 8px;
-            background: var(--panel-solid);
+            background: var(--card);
             cursor: pointer;
             font: inherit;
-            font-weight: 760;
+            white-space: nowrap;
         }
+
+        button:hover { border-color: var(--muted); }
+        button:active { background: var(--bg); }
 
         button.primary {
-            color: #001719;
-            border-color: transparent;
-            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-        }
-
-        button.danger {
             color: #fff;
-            border-color: transparent;
-            background: linear-gradient(135deg, var(--danger), #8f2424);
+            border-color: var(--accent);
+            background: var(--accent);
         }
 
-        button:hover { transform: translateY(-1px); }
+        button.danger { color: var(--danger); }
 
-        .countdown {
-            min-height: 24px;
-            color: var(--accent-strong);
+        .timer-state {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--line);
+        }
+
+        .timer-state.active { display: flex; }
+
+        .timer-state strong {
             font-variant-numeric: tabular-nums;
-            font-weight: 800;
+            font-weight: 600;
         }
 
-        @media (max-width: 860px) {
-            .topbar { align-items: stretch; flex-direction: column; }
-            .status { width: 100%; }
-            .grid { grid-template-columns: 1fr; }
-            .panel-wide { grid-row: auto; }
+        .timer-state .muted {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
         }
     </style>
 </head>
 <body>
-    <div class=""shell"">
-        <header class=""topbar"">
-            <div>
-                <p class=""eyebrow"">PC DEVICE CONSOLE</p>
-                <h1>&#x7535;&#x8111;&#x63A7;&#x5236;&#x9762;&#x677F;</h1>
-            </div>
-            <div class=""status""><span class=""dot""></span><span id=""displayStatus"">&#x7B49;&#x5F85;&#x8BBE;&#x5907;&#x5237;&#x65B0;</span></div>
+    <div class=""page"">
+        <header>
+            <h1>&#x7535;&#x8111;&#x63A7;&#x5236;</h1>
+            <span class=""status"" id=""status"">&#x8FDE;&#x63A5;&#x4E2D;</span>
         </header>
 
-        <main class=""grid"">
-            <section class=""panel panel-wide"">
-                <div class=""section-head"">
-                    <div>
-                        <div class=""section-code"">DISPLAY ARRAY</div>
-                        <h2>&#x663E;&#x793A;&#x5668;&#x4EAE;&#x5EA6;</h2>
-                    </div>
-                </div>
-                <div id=""displayGrid"" class=""device-grid"">
-                    <div class=""empty"">&#x6B63;&#x5728;&#x91CD;&#x65B0;&#x8BFB;&#x53D6;&#x663E;&#x793A;&#x5668;&#x4FE1;&#x606F;</div>
-                </div>
-            </section>
+        <section>
+            <h2>&#x663E;&#x793A;&#x5668;&#x4EAE;&#x5EA6;</h2>
+            <div id=""displayList"">
+                <div class=""empty"">&#x6B63;&#x5728;&#x8BFB;&#x53D6;&#x663E;&#x793A;&#x5668;&#x4FE1;&#x606F;&#x2026;</div>
+            </div>
+        </section>
 
-            <section class=""panel"">
-                <div class=""section-head"">
-                    <div>
-                        <div class=""section-code"">AUDIO BUS</div>
-                        <h2>&#x97F3;&#x91CF;&#x63A7;&#x5236;</h2>
-                    </div>
-                </div>
-                <div class=""stack"">
-                    <div class=""meter-row"">
-                        <input type=""range"" id=""rangeVolume"" min=""0"" max=""100"" value=""0"" />
-                        <span class=""value"" id=""volumeValue"">0%</span>
-                    </div>
-                </div>
-            </section>
+        <section>
+            <h2>&#x97F3;&#x91CF;</h2>
+            <div class=""slider"">
+                <input type=""range"" id=""volumeRange"" min=""0"" max=""100"" value=""0"" aria-label=""&#x97F3;&#x91CF;"" />
+                <span class=""value"" id=""volumeValue"">0%</span>
+            </div>
+        </section>
 
-            <section class=""panel"">
-                <div class=""section-head"">
-                    <div>
-                        <div class=""section-code"">POWER TIMER</div>
-                        <h2>&#x5B9A;&#x65F6;&#x5173;&#x673A;</h2>
-                    </div>
+        <section>
+            <h2>&#x5B9A;&#x65F6;&#x5173;&#x673A;</h2>
+            <div class=""presets"">
+                <button data-minutes=""30"">30&#x5206;&#x949F;</button>
+                <button data-minutes=""60"">1&#x5C0F;&#x65F6;</button>
+                <button data-minutes=""90"">1.5&#x5C0F;&#x65F6;</button>
+                <button data-minutes=""120"">2&#x5C0F;&#x65F6;</button>
+            </div>
+            <div class=""inline"">
+                <input id=""shutdownInput"" type=""number"" min=""1"" max=""10000"" inputmode=""numeric"" placeholder=""&#x81EA;&#x5B9A;&#x4E49;&#x5206;&#x949F;&#x6570;"" />
+                <button class=""primary"" id=""applyShutdown"">&#x5F00;&#x59CB;</button>
+            </div>
+            <div class=""timer-state"" id=""timerState"">
+                <div>
+                    <strong id=""timerRemaining""></strong>
+                    <div class=""muted"" id=""timerAt""></div>
                 </div>
-                <div class=""stack"">
-                    <div class=""meter-row"">
-                        <input type=""range"" id=""shutdownTimingRange"" min=""0"" max=""240"" value=""0"" />
-                        <span class=""value"" id=""shutdownRangeValue"">0m</span>
-                    </div>
-                    <input id=""shutdownTimingInput"" type=""number"" min=""0"" max=""10000"" placeholder=""&#x8F93;&#x5165;&#x5206;&#x949F;&#xFF0C;&#x53EF;&#x8D85;&#x8FC7; 240"" />
-                    <div class=""button-row"">
-                        <button class=""primary"" id=""applyShutdown"">&#x542F;&#x52A8;&#x5B9A;&#x65F6;</button>
-                        <button id=""cancelShutdown"">&#x53D6;&#x6D88;&#x5B9A;&#x65F6;</button>
-                    </div>
-                    <div class=""countdown"" id=""shutdownTimingMessage""></div>
-                </div>
-            </section>
+                <button id=""cancelShutdown"">&#x53D6;&#x6D88;</button>
+            </div>
+        </section>
 
-            <section class=""panel"">
-                <div class=""section-head"">
-                    <div>
-                        <div class=""section-code"">SYSTEM COMMAND</div>
-                        <h2>&#x7CFB;&#x7EDF;&#x63A7;&#x5236;</h2>
-                    </div>
-                </div>
-                <div class=""button-row"">
-                    <button class=""primary"" id=""lockWindows"">&#x9501;&#x5B9A;&#x7535;&#x8111;</button>
-                    <button class=""danger"" id=""shutdownNow"">&#x7ACB;&#x5373;&#x5173;&#x673A;</button>
-                    <button class=""danger"" id=""restartNow"">&#x7ACB;&#x5373;&#x91CD;&#x542F;</button>
-                </div>
-            </section>
-        </main>
+        <section>
+            <h2>&#x7CFB;&#x7EDF;</h2>
+            <div class=""actions"">
+                <button id=""lockWindows"">&#x9501;&#x5B9A;</button>
+                <button class=""danger"" id=""shutdownNow"">&#x5173;&#x673A;</button>
+                <button class=""danger"" id=""restartNow"">&#x91CD;&#x542F;</button>
+            </div>
+        </section>
     </div>
 
     <script>
-        const displayGrid = document.getElementById(""displayGrid"");
-        const displayStatus = document.getElementById(""displayStatus"");
-        const volumeRange = document.getElementById(""rangeVolume"");
-        const volumeValue = document.getElementById(""volumeValue"");
-        const shutdownRange = document.getElementById(""shutdownTimingRange"");
-        const shutdownInput = document.getElementById(""shutdownTimingInput"");
-        const shutdownRangeValue = document.getElementById(""shutdownRangeValue"");
-        const shutdownMessage = document.getElementById(""shutdownTimingMessage"");
+        const $ = id => document.getElementById(id);
+        const statusEl = $(""status"");
+        const displayList = $(""displayList"");
+        const volumeRange = $(""volumeRange"");
+        const volumeValue = $(""volumeValue"");
+        const shutdownInput = $(""shutdownInput"");
+        const timerState = $(""timerState"");
+        const timerRemaining = $(""timerRemaining"");
+        const timerAt = $(""timerAt"");
         let shutdownSeconds = 0;
         let countdownTimer = null;
 
         function requestText(url) {
-            return fetch(url, { cache: ""no-store"" }).then(response => response.text());
-        }
-
-        function setStatus(text) {
-            displayStatus.textContent = text;
-        }
-
-        function renderDisplays(items) {
-            displayGrid.innerHTML = """";
-            if (!items || items.length === 0) {
-                displayGrid.innerHTML = ""<div class='empty'>&#x672A;&#x68C0;&#x6D4B;&#x5230;&#x663E;&#x793A;&#x5668;&#x4FE1;&#x606F;</div>"";
-                setStatus(""\u672A\u68C0\u6D4B\u5230\u663E\u793A\u5668"");
-                return;
-            }
-
-            items.forEach((item, index) => {
-                const card = document.createElement(""article"");
-                card.className = ""device-card"";
-                const title = document.createElement(""p"");
-                title.className = ""device-name"";
-                title.textContent = item.AlternateDescription || item.Description || (""Display "" + (index + 1));
-
-                const meta = document.createElement(""div"");
-                meta.className = ""device-meta"";
-                meta.innerHTML = ""<span>"" + (item.IsInternal ? ""Internal"" : ""External"") + ""</span><span>#"" + (index + 1) + ""</span>"";
-
-                const row = document.createElement(""div"");
-                row.className = ""meter-row"";
-                const range = document.createElement(""input"");
-                range.type = ""range"";
-                range.min = ""0"";
-                range.max = ""100"";
-                range.value = normalizeValue(item.Brightness);
-                const value = document.createElement(""span"");
-                value.className = ""value"";
-                value.textContent = range.value + ""%"";
-
-                range.addEventListener(""input"", () => {
-                    value.textContent = range.value + ""%"";
-                    requestText(""/Home/SetBrightness?brightness="" + encodeURIComponent(range.value) + ""&IsInternal="" + encodeURIComponent(item.IsInternal));
-                });
-
-                row.appendChild(range);
-                row.appendChild(value);
-                card.appendChild(title);
-                card.appendChild(meta);
-                card.appendChild(row);
-                displayGrid.appendChild(card);
+            return fetch(url, { cache: ""no-store"" }).then(response => {
+                if (!response.ok) throw new Error(response.status);
+                return response.text();
             });
-
-            setStatus(items.length + "" display"" + (items.length > 1 ? ""s"" : """") + "" loaded"");
         }
 
-        function normalizeValue(value) {
+        function send(url) {
+            return requestText(url)
+                .then(text => { setStatus(""\u5DF2\u8FDE\u63A5"", ""ok""); return text; })
+                .catch(error => { setStatus(""\u8FDE\u63A5\u5931\u8D25"", ""error""); throw error; });
+        }
+
+        function setStatus(text, state) {
+            statusEl.textContent = text;
+            statusEl.className = ""status"" + (state ? "" "" + state : """");
+        }
+
+        function throttle(fn, wait) {
+            let last = 0;
+            let pending = null;
+            return value => {
+                const now = Date.now();
+                clearTimeout(pending);
+                if (now - last >= wait) {
+                    last = now;
+                    fn(value);
+                } else {
+                    pending = setTimeout(() => { last = Date.now(); fn(value); }, wait - (now - last));
+                }
+            };
+        }
+
+        function clamp(value) {
             const parsed = parseInt(value, 10);
             if (Number.isNaN(parsed)) return 0;
             return Math.max(0, Math.min(100, parsed));
         }
 
+        function createSlider(initial, label, onChange) {
+            const wrap = document.createElement(""div"");
+            wrap.className = ""slider"";
+            const range = document.createElement(""input"");
+            range.type = ""range"";
+            range.min = ""0"";
+            range.max = ""100"";
+            range.value = clamp(initial);
+            range.setAttribute(""aria-label"", label);
+            const value = document.createElement(""span"");
+            value.className = ""value"";
+            value.textContent = range.value + ""%"";
+            const sendThrottled = throttle(onChange, 150);
+            range.addEventListener(""input"", () => {
+                value.textContent = range.value + ""%"";
+                sendThrottled(range.value);
+            });
+            wrap.appendChild(range);
+            wrap.appendChild(value);
+            return wrap;
+        }
+
+        function renderDisplays(items) {
+            displayList.innerHTML = """";
+            if (!items || items.length === 0) {
+                displayList.innerHTML = ""<div class='empty'>\u672A\u68C0\u6D4B\u5230\u53EF\u8C03\u8282\u4EAE\u5EA6\u7684\u663E\u793A\u5668</div>"";
+                return;
+            }
+
+            items.forEach((item, index) => {
+                const name = item.AlternateDescription || item.Description || (""\u663E\u793A\u5668 "" + (index + 1));
+                const row = document.createElement(""div"");
+                row.className = ""row"";
+
+                const label = document.createElement(""div"");
+                label.className = ""row-label"";
+                const title = document.createElement(""span"");
+                title.textContent = name;
+                const tag = document.createElement(""span"");
+                tag.className = ""tag"";
+                tag.textContent = item.IsInternal ? ""\u5185\u7F6E"" : ""\u5916\u63A5"";
+                label.appendChild(title);
+                label.appendChild(tag);
+
+                row.appendChild(label);
+                row.appendChild(createSlider(item.Brightness, name + "" \u4EAE\u5EA6"", value =>
+                    send(""/Home/SetBrightness?brightness="" + encodeURIComponent(value) + ""&IsInternal="" + encodeURIComponent(item.IsInternal)).catch(() => {})));
+                displayList.appendChild(row);
+            });
+        }
+
         function loadDisplays() {
-            return requestText(""/Home/GetDisplayDeviceInfo"").then(data => {
-                if (!data || data === ""error"") {
-                    renderDisplays([]);
-                    return;
-                }
-                renderDisplays(JSON.parse(data));
-            }).catch(() => setStatus(""Display loading failed""));
+            return send(""/Home/GetDisplayDeviceInfo"").then(data => {
+                renderDisplays(!data || data === ""error"" ? [] : JSON.parse(data));
+            }).catch(() => {
+                displayList.innerHTML = ""<div class='empty'>\u8BFB\u53D6\u663E\u793A\u5668\u4FE1\u606F\u5931\u8D25</div>"";
+            });
         }
 
         function loadVolume() {
-            requestText(""/Home/GetVolume"").then(data => {
-                volumeRange.value = normalizeValue(data);
+            return send(""/Home/GetVolume"").then(data => {
+                volumeRange.value = clamp(data);
                 volumeValue.textContent = volumeRange.value + ""%"";
             }).catch(() => {});
         }
 
-        function setVolume() {
-            volumeValue.textContent = volumeRange.value + ""%"";
-            requestText(""/Home/SetVolume?volume="" + encodeURIComponent(volumeRange.value));
+        const sendVolume = throttle(value => send(""/Home/SetVolume?volume="" + encodeURIComponent(value)).catch(() => {}), 150);
+
+        function formatDuration(totalSeconds) {
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            const s = totalSeconds % 60;
+            const pad = n => String(n).padStart(2, ""0"");
+            return (h > 0 ? h + "":"" + pad(m) : m) + "":"" + pad(s);
         }
 
-        function applyShutdown(minutes) {
-            const normalized = Math.max(0, parseInt(minutes || 0, 10));
-            shutdownInput.value = normalized;
-            shutdownRange.value = Math.min(normalized, parseInt(shutdownRange.max, 10));
-            shutdownRangeValue.textContent = normalized + ""m"";
-            shutdownSeconds = normalized * 60;
-            requestText(""/Home/TimingShutdown?minute="" + encodeURIComponent(shutdownSeconds));
-            startCountdown();
-        }
-
-        function startCountdown() {
-            if (countdownTimer) clearInterval(countdownTimer);
-            updateCountdown();
-            countdownTimer = setInterval(() => {
-                if (shutdownSeconds <= 0) {
-                    clearInterval(countdownTimer);
-                    countdownTimer = null;
-                    return;
-                }
-                shutdownSeconds -= 1;
-                updateCountdown();
-            }, 1000);
+        function formatClock(date) {
+            return String(date.getHours()).padStart(2, ""0"") + "":"" + String(date.getMinutes()).padStart(2, ""0"");
         }
 
         function updateCountdown() {
             if (shutdownSeconds <= 0) {
-                shutdownMessage.textContent = """";
+                timerState.classList.remove(""active"");
                 return;
             }
-            const hours = Math.floor(shutdownSeconds / 3600);
-            const minutes = Math.floor((shutdownSeconds % 3600) / 60);
-            const seconds = shutdownSeconds % 60;
-            shutdownMessage.textContent = ""\u7535\u8111\u5C06\u4E8E "" + hours + ""h "" + String(minutes).padStart(2, ""0"") + ""m "" + String(seconds).padStart(2, ""0"") + ""s \u540E\u5173\u673A"";
+            timerState.classList.add(""active"");
+            timerRemaining.textContent = ""\u5269\u4F59 "" + formatDuration(shutdownSeconds);
+            timerAt.textContent = ""\u5C06\u4E8E "" + formatClock(new Date(Date.now() + shutdownSeconds * 1000)) + "" \u5173\u673A"";
         }
 
-        volumeRange.addEventListener(""input"", setVolume);
-        shutdownRange.addEventListener(""input"", () => {
-            shutdownInput.value = shutdownRange.value;
-            shutdownRangeValue.textContent = shutdownRange.value + ""m"";
+        function startCountdown(seconds) {
+            shutdownSeconds = seconds;
+            if (countdownTimer) clearInterval(countdownTimer);
+            countdownTimer = null;
+            updateCountdown();
+            if (shutdownSeconds <= 0) return;
+            countdownTimer = setInterval(() => {
+                shutdownSeconds -= 1;
+                updateCountdown();
+                if (shutdownSeconds <= 0) {
+                    clearInterval(countdownTimer);
+                    countdownTimer = null;
+                }
+            }, 1000);
+        }
+
+        function applyShutdown(minutes) {
+            const normalized = Math.max(0, parseInt(minutes || 0, 10) || 0);
+            const seconds = normalized * 60;
+            send(""/Home/TimingShutdown?minute="" + encodeURIComponent(seconds))
+                .then(() => startCountdown(seconds))
+                .catch(() => {});
+        }
+
+        function confirmed(message, url) {
+            if (window.confirm(message)) send(url).catch(() => {});
+        }
+
+        volumeRange.addEventListener(""input"", () => {
+            volumeValue.textContent = volumeRange.value + ""%"";
+            sendVolume(volumeRange.value);
         });
-        shutdownInput.addEventListener(""input"", () => {
-            shutdownRange.value = Math.min(parseInt(shutdownInput.value || 0, 10), parseInt(shutdownRange.max, 10));
-            shutdownRangeValue.textContent = (shutdownInput.value || 0) + ""m"";
+
+        document.querySelectorAll(""[data-minutes]"").forEach(button => {
+            button.addEventListener(""click"", () => applyShutdown(button.dataset.minutes));
         });
-        document.getElementById(""applyShutdown"").addEventListener(""click"", () => applyShutdown(shutdownInput.value || shutdownRange.value));
-        document.getElementById(""cancelShutdown"").addEventListener(""click"", () => applyShutdown(0));
-        document.getElementById(""lockWindows"").addEventListener(""click"", () => requestText(""/Home/LockWindows""));
-        document.getElementById(""shutdownNow"").addEventListener(""click"", () => requestText(""/Home/WindowsShutdown""));
-        document.getElementById(""restartNow"").addEventListener(""click"", () => requestText(""/Home/WindowsRestart""));
+        $(""applyShutdown"").addEventListener(""click"", () => {
+            const minutes = parseInt(shutdownInput.value, 10);
+            if (!minutes || minutes <= 0) {
+                shutdownInput.focus();
+                return;
+            }
+            applyShutdown(minutes);
+            shutdownInput.value = """";
+        });
+        shutdownInput.addEventListener(""keydown"", event => {
+            if (event.key === ""Enter"") $(""applyShutdown"").click();
+        });
+        $(""cancelShutdown"").addEventListener(""click"", () => applyShutdown(0));
+        $(""lockWindows"").addEventListener(""click"", () => send(""/Home/LockWindows"").catch(() => {}));
+        $(""shutdownNow"").addEventListener(""click"", () => confirmed(""\u786E\u5B9A\u7ACB\u5373\u5173\u673A\uFF1F"", ""/Home/WindowsShutdown""));
+        $(""restartNow"").addEventListener(""click"", () => confirmed(""\u786E\u5B9A\u7ACB\u5373\u91CD\u542F\uFF1F"", ""/Home/WindowsRestart""));
 
         loadDisplays();
         loadVolume();
-        requestText(""/Home/GetShutdownTimingVal"").then(data => {
+        send(""/Home/GetShutdownTimingVal"").then(data => {
             const seconds = parseInt(data || 0, 10);
-            if (seconds > 0) {
-                shutdownSeconds = seconds;
-                shutdownInput.value = Math.ceil(seconds / 60);
-                shutdownRange.value = Math.min(Math.ceil(seconds / 60), parseInt(shutdownRange.max, 10));
-                shutdownRangeValue.textContent = shutdownInput.value + ""m"";
-                startCountdown();
-            }
+            if (seconds > 0) startCountdown(seconds);
         }).catch(() => {});
     </script>
 </body>

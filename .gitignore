@@ -1,0 +1,15 @@
+# Visual Studio
+.vs/
+*.suo
+*.user
+
+# Build output
+[Bb]in/
+[Oo]bj/
+
+# NuGet packages (restored from packages.config)
+packages/
+
+# Runtime logs
+*.log
+*.Log
