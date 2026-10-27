@@ -55,7 +55,7 @@ namespace PCDeviceManage
 
         private readonly MonitorRegistry _monitorRegistry;
         private readonly AudioService _audioService;
-        private readonly WindowsManage _windowsManage;
+        private readonly PowerService _powerService;
         private readonly ShutdownScheduler _shutdownScheduler;
         private readonly TokenAuthenticator _authenticator;
         private readonly int _port;
@@ -69,7 +69,7 @@ namespace PCDeviceManage
         public WebServer(
             MonitorRegistry monitorRegistry,
             AudioService audioService,
-            WindowsManage windowsManage,
+            PowerService powerService,
             ShutdownScheduler shutdownScheduler,
             TokenAuthenticator authenticator,
             int port,
@@ -78,7 +78,7 @@ namespace PCDeviceManage
         {
             _monitorRegistry = monitorRegistry ?? throw new ArgumentNullException(nameof(monitorRegistry));
             _audioService = audioService;
-            _windowsManage = windowsManage;
+            _powerService = powerService;
             _shutdownScheduler = shutdownScheduler ?? throw new ArgumentNullException(nameof(shutdownScheduler));
             _authenticator = authenticator ?? throw new ArgumentNullException(nameof(authenticator));
             _port = port;
@@ -109,20 +109,20 @@ namespace PCDeviceManage
             Map("POST", "/api/power/lock", c =>
             {
                 _log.Info("Lock requested. Remote: " + c.Request.RemoteEndPoint);
-                _windowsManage.LockWindows();
+                _powerService.Lock();
                 Ok(c, null);
             });
             Map("POST", "/api/power/shutdown", c =>
             {
                 _log.Info("Shutdown requested. Remote: " + c.Request.RemoteEndPoint);
                 Ok(c, null);
-                _windowsManage.WindowsShutdown();
+                _powerService.Shutdown();
             });
             Map("POST", "/api/power/restart", c =>
             {
                 _log.Info("Restart requested. Remote: " + c.Request.RemoteEndPoint);
                 Ok(c, null);
-                _windowsManage.WindowsRestart();
+                _powerService.Restart();
             });
             Map("GET", "/api/power/schedule", c => Ok(c, ScheduleState()));
             Map("POST", "/api/power/schedule", c =>

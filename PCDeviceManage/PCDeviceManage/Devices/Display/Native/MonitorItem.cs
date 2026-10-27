@@ -53,24 +53,6 @@ namespace PCDeviceManage
 		public virtual AccessResult UpdateContrast() => AccessResult.NotSupported;
 		public virtual AccessResult SetContrast(int contrast) => AccessResult.NotSupported;
 
-		//public override string ToString()
-		//{
-		//	return SimpleSerialization.Serialize(
-		//		(nameof(Type), this.GetType().Name),
-		//		(nameof(DeviceInstanceId), DeviceInstanceId),
-		//		(nameof(Description), Description),
-		//		(nameof(DisplayIndex), DisplayIndex),
-		//		(nameof(MonitorIndex), MonitorIndex),
-		//		(nameof(MonitorRect), MonitorRect),
-		//		(nameof(IsReachable), IsReachable),
-		//		(nameof(IsBrightnessSupported), IsBrightnessSupported),
-		//		(nameof(IsContrastSupported), IsContrastSupported),
-		//		(nameof(IsPrecleared), IsPrecleared),
-		//		(nameof(Brightness), Brightness),
-		//		(nameof(BrightnessSystemAdjusted), BrightnessSystemAdjusted),
-		//		(nameof(Contrast), Contrast));
-		//}
-
 		#region IDisposable
 
 		private bool _isDisposed = false;

@@ -54,7 +54,7 @@ namespace PCDeviceManage
             List<DisplayInfoGet.DeviceItemPlus> deviceItems,
             Dictionary<DisplayInfoGet.DeviceItemPlus, DdcMonitor> ddcMonitors)
         {
-            foreach (temp.HandleItem handleItem in temp.GetMonitorHandles())
+            foreach (DisplayMonitorHandles.HandleItem handleItem in DisplayMonitorHandles.GetMonitorHandles())
             {
                 foreach (MonitorConfiguration.PhysicalItem physicalItem in MonitorConfiguration.EnumeratePhysicalMonitors(handleItem.MonitorHandle))
                 {

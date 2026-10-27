@@ -87,20 +87,20 @@ namespace PCDeviceManage
 
         private static bool Start()
         {
-            var windowsManage = new WindowsManage();
-            _shutdownScheduler = new ShutdownScheduler(windowsManage.WindowsShutdown);
+            var powerService = new PowerService();
+            _shutdownScheduler = new ShutdownScheduler(powerService.Shutdown);
 
             _monitorRegistry = new MonitorRegistry(new SystemMonitorEnumerator(), _log);
             _monitorRegistry.Start();
 
-            bool webStarted = StartWebServer(windowsManage);
+            bool webStarted = StartWebServer(powerService);
 
             _frpTunnel = new FrpTunnel(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "frp"), _settings.FrpEnabled, _log);
             _frpTunnel.Start();
             return webStarted;
         }
 
-        private static bool StartWebServer(WindowsManage windowsManage)
+        private static bool StartWebServer(PowerService powerService)
         {
             int port = _settings.WebPort;
             try
@@ -111,7 +111,7 @@ namespace PCDeviceManage
                     return false;
                 }
 
-                _webServer = new WebServer(_monitorRegistry, new AudioService(), windowsManage, _shutdownScheduler,
+                _webServer = new WebServer(_monitorRegistry, new AudioService(), powerService, _shutdownScheduler,
                     new TokenAuthenticator(_settings.AccessToken), port, _settings.WebHost, _log);
                 return _webServer.Start();
             }

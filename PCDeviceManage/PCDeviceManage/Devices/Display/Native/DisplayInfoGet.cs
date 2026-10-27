@@ -34,14 +34,11 @@ namespace PCDeviceManage
 			}
 		}
 
-		//private static HashSet<string> _foundIds;
-
 		public List<DeviceItemPlus> GetDisplayList() 
 		{
 			IDisplayItem[] displayItems = DisplayInfo.GetDisplayMonitorsAsync();
 			_log.Info(" DisplayInfo.GetDisplayMonitorsAsync()获取到显示器数量："+ displayItems.Length);
 			var deviceItems = DisplayContext.EnumerateMonitorDevices().ToArray();
-			//_foundIds = new HashSet<string>(deviceItems.Select(x => x.DeviceInstanceId));
 
 			_log.Info("DisplayContext.EnumerateMonitorDevices()获取到设备数量：" + deviceItems.Length);
 
@@ -49,10 +46,6 @@ namespace PCDeviceManage
 			{
 				foreach (var deviceItem in deviceItems)
 				{
-					//_log.Info(deviceItem.Description);
-					//_log.Info(deviceItem.DeviceInstanceId);
-					//_log.Info(deviceItem.DisplayIndex);
-					//_log.Info(deviceItem.MonitorIndex);
 					var displayItem = displayItems.FirstOrDefault(x => string.Equals(deviceItem.DeviceInstanceId, x.DeviceInstanceId, StringComparison.OrdinalIgnoreCase));
 					if (displayItem is null)
 					{

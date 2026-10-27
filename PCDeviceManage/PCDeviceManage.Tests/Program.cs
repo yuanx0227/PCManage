@@ -738,7 +738,7 @@ namespace PCDeviceManage.Tests
                 _server = new WebServer(
                     _registry,
                     new AudioService(),
-                    new WindowsManage(),
+                    new PowerService(),
                     Scheduler,
                     new TokenAuthenticator(Token),
                     _port,

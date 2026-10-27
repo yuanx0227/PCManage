@@ -9,11 +9,11 @@ using System.Threading.Tasks;
 
 namespace PCDeviceManage
 {
-    public class WindowsManage
+    public class PowerService
     {
 
         //日志方法调用
-        private static ILog _log = LogManager.GetLogger(typeof(WindowsManage));
+        private static ILog _log = LogManager.GetLogger(typeof(PowerService));
 
         [DllImport("user32")]
         private static extern void LockWorkStation();
@@ -82,7 +82,7 @@ namespace PCDeviceManage
         /// <summary>
         /// 锁定电脑
         /// </summary>
-        public void LockWindows()
+        public void Lock()
         {
             try
             {
@@ -95,13 +95,13 @@ namespace PCDeviceManage
             }
         }
 
-        public void WindowsShutdown()
+        public void Shutdown()
         {
             _log.Info("收到关闭计算机指令。");
             DoExitWin(EWX_FORCE | EWX_POWEROFF);
         }
 
-        public void WindowsRestart()
+        public void Restart()
         {
             _log.Info("收到重启计算机指令。");
             DoExitWin(EWX_FORCE | EWX_REBOOT);
