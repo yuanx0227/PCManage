@@ -104,7 +104,7 @@ namespace PCDeviceManage.Tests
         }
 
         [Fact]
-        public void ConcurrentWritesKeepLatestValue()
+        public async Task ConcurrentWritesKeepLatestValue()
         {
             var entered = new ManualResetEventSlim();
             var release = new ManualResetEventSlim();
@@ -130,7 +130,8 @@ namespace PCDeviceManage.Tests
                 Assert.True(registry.SetBrightness("aaaa0001", 30) == BrightnessWriteStatus.Queued, "Expected third write to be queued.");
                 release.Set();
 
-                Assert.True(first.Wait(5000) && first.Result == BrightnessWriteStatus.Applied, "Expected the writer to finish.");
+                Assert.True(await Task.WhenAny(first, Task.Delay(5000)) == first, "Expected the writer to finish.");
+                Assert.Equal(BrightnessWriteStatus.Applied, await first);
                 Assert.True(monitor.Writes.SequenceEqual(new[] { 10, 30 }), "Expected intermediate value to be skipped, got " + string.Join(",", monitor.Writes));
             }
         }

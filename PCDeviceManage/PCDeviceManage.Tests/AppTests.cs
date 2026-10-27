@@ -130,15 +130,8 @@ namespace PCDeviceManage.Tests
             using (var dir = new TempDirectory())
             {
                 File.WriteAllText(dir.File("settings.json"), "{ not json");
-                try
-                {
-                    bool created;
-                    AppSettings.LoadOrCreate(dir.File("settings.json"), null, out created);
-                    Assert.True(false, "Expected corrupt settings to throw.");
-                }
-                catch (InvalidDataException)
-                {
-                }
+                bool created;
+                Assert.Throws<InvalidDataException>(() => AppSettings.LoadOrCreate(dir.File("settings.json"), null, out created));
                 Assert.True(File.ReadAllText(dir.File("settings.json")) == "{ not json", "Expected the corrupt file to be left untouched.");
             }
         }

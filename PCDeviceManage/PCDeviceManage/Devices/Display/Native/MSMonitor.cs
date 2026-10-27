@@ -84,7 +84,7 @@ namespace PCDeviceManage
 						}
 					}
 				}
-				catch (ManagementException me)
+				catch (ManagementException)
 				{
 					//Debug.WriteLine($"Failed to get and enumerate instances by Win32_DesktopMonitor. HResult: {me.HResult} ErrorCode: {me.ErrorCode}" + Environment.NewLine	+ me);
 					yield break;
@@ -99,7 +99,7 @@ namespace PCDeviceManage
 				{
 					instances = @class.GetInstances();
 				}
-				catch (ManagementException me)
+				catch (ManagementException)
 				{
 					//Debug.WriteLine($"Failed to get instances by WmiMonitorBrightness. HResult: {me.HResult} ErrorCode: {me.ErrorCode}" + Environment.NewLine + me);
 					yield break;
@@ -115,7 +115,7 @@ namespace PCDeviceManage
 							if (!enumerator.MoveNext())
 								break;
 						}
-						catch (ManagementException me)
+						catch (ManagementException)
 						{
 							// ManagementObjectCollection.ManagementObjectEnumerator.MoveNext method for 
 							// WmiMonitorBrightness instance may throw a ManagementException when called
@@ -174,7 +174,7 @@ namespace PCDeviceManage
 					return -1;
 				}
 			}
-			catch (ManagementException me)
+			catch (ManagementException)
 			{
 				//Debug.WriteLine($"Failed to get brightness by WmiMonitorBrightness. HResult: {me.HResult} ErrorCode: {me.ErrorCode}" + Environment.NewLine + me);
 				return -1;
@@ -219,7 +219,7 @@ namespace PCDeviceManage
 					return false;
 				}
 			}
-			catch (ManagementException me)
+			catch (ManagementException)
 			{
 				//Debug.WriteLine($"Failed to set brightness by WmiSetBrightness. HResult: {me.HResult} ErrorCode: {me.ErrorCode}" + Environment.NewLine	+ me);
 				return false;

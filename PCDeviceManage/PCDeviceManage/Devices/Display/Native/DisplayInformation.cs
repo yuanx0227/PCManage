@@ -125,11 +125,11 @@ namespace PCDeviceManage
 			}
 			catch (ArgumentException ax) when ((uint)ax.HResult is ERROR_INVALID_PARAMETER)
 			{
-				throw ax;
+				throw;
 			}
 			catch (Exception ex) when ((uint)ex.HResult == ERROR_GEN_FAILURE || (uint)ex.HResult == TYPE_E_ELEMENTNOTFOUND)
 			{
-				throw ex;
+				throw;
 			}
 			return Array.Empty<DisplayItem>();
 		}

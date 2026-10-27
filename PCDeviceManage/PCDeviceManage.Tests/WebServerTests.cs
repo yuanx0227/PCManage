@@ -24,7 +24,7 @@ namespace PCDeviceManage.Tests
         }
 
         [Fact]
-        public void HostRunsLifetimeHooksEvenWhenPortIsBusy()
+        public async Task HostRunsLifetimeHooksEvenWhenPortIsBusy()
         {
             var busy = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
             busy.Start();
@@ -44,11 +44,11 @@ namespace PCDeviceManage.Tests
                     services.AddLifetimeHook(provider => started++, provider => stopped++);
                 });
 
-                Assert.ThrowsAny<Exception>(() => app.StartAsync().GetAwaiter().GetResult());
+                await Assert.ThrowsAnyAsync<Exception>(() => app.StartAsync());
                 Assert.Equal(1, started);
 
-                app.StopAsync().GetAwaiter().GetResult();
-                app.DisposeAsync().AsTask().GetAwaiter().GetResult();
+                await app.StopAsync();
+                await app.DisposeAsync();
                 scheduler.Dispose();
                 Assert.Equal(1, stopped);
             }
