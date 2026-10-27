@@ -2,7 +2,7 @@ using log4net;
 using System;
 using System.Threading;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.Devices.Power
 {
     public sealed class ShutdownWarningEventArgs : EventArgs
     {

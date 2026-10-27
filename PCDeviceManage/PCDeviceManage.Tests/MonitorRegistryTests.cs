@@ -1,3 +1,4 @@
+using PCDeviceManage.Devices.Display;
 using System;
 using System.Collections.Generic;
 using System.IO;

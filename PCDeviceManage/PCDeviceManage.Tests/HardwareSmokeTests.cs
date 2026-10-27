@@ -1,3 +1,5 @@
+using PCDeviceManage.Devices.Audio;
+using PCDeviceManage.Devices.Display;
 using System;
 using System.Runtime.InteropServices;
 using Xunit;

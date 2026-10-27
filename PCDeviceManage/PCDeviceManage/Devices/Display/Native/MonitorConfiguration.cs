@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.Devices.Display.Native
 {
    public class MonitorConfiguration
     {

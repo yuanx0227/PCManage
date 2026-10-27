@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Drawing;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.Devices.Display.Native
 {
 	/// <summary>
 	/// 枚举 HMONITOR 句柄及其所属的显示设备序号，用于打开 DDC/CI 物理显示器句柄。

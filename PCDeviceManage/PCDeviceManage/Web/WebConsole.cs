@@ -5,13 +5,16 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using PCDeviceManage.Devices.Audio;
+using PCDeviceManage.Devices.Display;
+using PCDeviceManage.Devices.Power;
 using System;
 using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.Web
 {
     /// <summary>
     /// 本机 Web 控制台的中间件和端点（Minimal API）。只负责路由、鉴权、防 CSRF 和 JSON 序列化，

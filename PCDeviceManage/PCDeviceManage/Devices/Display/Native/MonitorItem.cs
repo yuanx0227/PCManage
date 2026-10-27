@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.Devices.Display.Native
 {
    public abstract class MonitorItem : IMonitor, IDisposable
     {

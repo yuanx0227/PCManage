@@ -1,3 +1,4 @@
+using PCDeviceManage.Devices.Power;
 using System;
 using System.Collections.Generic;
 using System.IO;

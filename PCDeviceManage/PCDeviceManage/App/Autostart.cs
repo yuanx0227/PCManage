@@ -2,7 +2,7 @@ using Microsoft.Win32;
 using System;
 using System.IO;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.App
 {
     /// <summary>
     /// 开机自启：写 HKCU\Software\Microsoft\Windows\CurrentVersion\Run，不需要管理员权限，也不再依赖 WSH/Shell32 COM 组件。

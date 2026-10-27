@@ -8,7 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.Devices.Display.Native
 {
 	public class DisplayContext
 	{

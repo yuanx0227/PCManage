@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.App
 {
     /// <summary>
     /// 用户配置，保存在 %LocalAppData%\PCManage\settings.json。

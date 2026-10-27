@@ -1,3 +1,8 @@
+using Microsoft.Extensions.DependencyInjection;
+using PCDeviceManage.App;
+using PCDeviceManage.Devices.Audio;
+using PCDeviceManage.Devices.Power;
+using PCDeviceManage.Web;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -5,7 +10,6 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using static PCDeviceManage.Tests.TestSupport;
 

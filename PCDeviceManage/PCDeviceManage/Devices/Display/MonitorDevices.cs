@@ -1,9 +1,10 @@
+using PCDeviceManage.Devices.Display.Native;
 using System;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Serialization;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.Devices.Display
 {
     /// <summary>
     /// 一台可调亮度的显示器。实现类负责自己的线程安全，Dispose 后的调用应安全地返回失败。

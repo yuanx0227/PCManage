@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Drawing;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.Devices.Display.Native
 {
     public class DdcMonitorItem : MonitorItem
 	{

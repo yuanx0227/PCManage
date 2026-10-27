@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.Devices.Display.Native
 {
    public interface IMonitor : IDisposable
     {

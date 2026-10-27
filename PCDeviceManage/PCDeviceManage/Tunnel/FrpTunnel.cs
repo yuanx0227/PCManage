@@ -6,7 +6,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.Tunnel
 {
     public enum FrpStatus
     {

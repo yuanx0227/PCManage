@@ -1,8 +1,9 @@
+using PCDeviceManage.Devices.Display.Native;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.Devices.Display
 {
     /// <summary>
     /// 枚举本机显示器：内置屏走 WMI/电源方案，外接显示器通过 DDC/CI 打开物理显示器句柄。

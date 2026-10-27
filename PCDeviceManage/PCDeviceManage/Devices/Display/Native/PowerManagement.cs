@@ -5,7 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.Devices.Display.Native
 {
    public class PowerManagement
     {

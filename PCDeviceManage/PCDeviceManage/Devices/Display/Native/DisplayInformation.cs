@@ -7,7 +7,7 @@ using Windows.Devices.Display;
 using Windows.Devices.Enumeration;
 using Windows.Foundation;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.Devices.Display.Native
 {
 	/// <summary>
 	/// A wrapper class of <see cref="Windows.Devices.Display.DisplayMonitor"/>

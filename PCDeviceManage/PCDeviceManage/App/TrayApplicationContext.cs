@@ -1,10 +1,12 @@
 using log4net;
+using PCDeviceManage.Devices.Power;
+using PCDeviceManage.Tunnel;
 using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.App
 {
     /// <summary>
     /// 托盘图标和菜单。程序没有主窗口，生命周期由这里控制：选择“退出”后 Application.Run 返回。

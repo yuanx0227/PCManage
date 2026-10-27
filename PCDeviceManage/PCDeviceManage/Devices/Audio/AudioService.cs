@@ -2,7 +2,7 @@ using log4net;
 using NAudio.CoreAudioApi;
 using System;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.Devices.Audio
 {
     /// <summary>
     /// 默认播放设备的音量。每次调用都重新获取默认设备：插拔耳机后默认设备会变，

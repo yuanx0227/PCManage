@@ -3,11 +3,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using PCDeviceManage.Web;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.App
 {
     /// <summary>
     /// 应用主机：一个 WebApplication 同时承载 Web 控制台和后台服务，统一启动和停止；

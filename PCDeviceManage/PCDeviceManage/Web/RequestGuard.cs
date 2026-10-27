@@ -1,6 +1,6 @@
 using System;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.Web
 {
     /// <summary>
     /// 防跨站请求伪造：会改变状态的 POST 必须带自定义请求头（跨站请求带自定义头会触发 CORS 预检，而本服务不响应预检），

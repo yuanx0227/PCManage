@@ -2,7 +2,7 @@ using System;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.Web
 {
     public enum LoginStatus
     {

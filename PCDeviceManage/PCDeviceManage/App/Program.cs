@@ -2,13 +2,18 @@
 using log4net.Config;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using PCDeviceManage.Devices.Audio;
+using PCDeviceManage.Devices.Display;
+using PCDeviceManage.Devices.Power;
+using PCDeviceManage.Tunnel;
+using PCDeviceManage.Web;
 using System;
 using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
 
-namespace PCDeviceManage
+namespace PCDeviceManage.App
 {
     static class Program
     {
