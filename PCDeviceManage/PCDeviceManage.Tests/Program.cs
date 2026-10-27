@@ -38,6 +38,9 @@ namespace PCDeviceManage.Tests
                 Test(nameof(FrpStatusIsParsedFromLog), FrpStatusIsParsedFromLog),
                 Test(nameof(FrpSkipsWhenNotConfiguredOrDisabled), FrpSkipsWhenNotConfiguredOrDisabled),
                 Test(nameof(FrpSupervisesProcess), FrpSupervisesProcess),
+                Test(nameof(AutostartTogglesRunValue), AutostartTogglesRunValue),
+                Test(nameof(AutostartMigratesLegacyShortcut), AutostartMigratesLegacyShortcut),
+                Test(nameof(TrayResourcesAndConsoleUrl), TrayResourcesAndConsoleUrl),
                 Test(nameof(LoginAcceptsOnlyCorrectToken), LoginAcceptsOnlyCorrectToken),
                 Test(nameof(LoginLocksAfterRepeatedFailures), LoginLocksAfterRepeatedFailures),
                 Test(nameof(SuccessfulLoginResetsFailureCount), SuccessfulLoginResetsFailureCount),
@@ -407,6 +410,67 @@ namespace PCDeviceManage.Tests
             {
                 return false;
             }
+        }
+
+        // 测试只读写 HKCU\Software\PCManageTests 下的临时键，不会改动真正的开机启动项。
+        private static void WithTestRunKey(Action<Autostart, string> action)
+        {
+            string keyPath = @"Software\PCManageTests\" + Guid.NewGuid().ToString("N");
+            try
+            {
+                action(new Autostart(Microsoft.Win32.Registry.CurrentUser, keyPath, "PCManage", @"C:\Apps\PC Manage\PCDeviceManage.exe"), keyPath);
+            }
+            finally
+            {
+                Microsoft.Win32.Registry.CurrentUser.DeleteSubKeyTree(@"Software\PCManageTests", false);
+            }
+        }
+
+        private static void AutostartTogglesRunValue()
+        {
+            WithTestRunKey((autostart, keyPath) =>
+            {
+                Assert(!autostart.IsEnabled, "Expected autostart to be off without a key.");
+                autostart.Enable();
+                Assert(autostart.IsEnabled, "Expected autostart to be on after Enable.");
+                using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(keyPath))
+                {
+                    Assert((string)key.GetValue("PCManage") == "\"C:\\Apps\\PC Manage\\PCDeviceManage.exe\"", "Expected a quoted executable path.");
+                }
+
+                var other = new Autostart(Microsoft.Win32.Registry.CurrentUser, keyPath, "PCManage", @"D:\Other\PCDeviceManage.exe");
+                Assert(!other.IsEnabled, "Expected an entry for another copy not to count as enabled.");
+
+                autostart.Disable();
+                autostart.Disable();
+                Assert(!autostart.IsEnabled, "Expected autostart to be off after Disable.");
+            });
+        }
+
+        private static void AutostartMigratesLegacyShortcut()
+        {
+            WithTestRunKey((autostart, keyPath) =>
+            {
+                using (var dir = new TempDirectory())
+                {
+                    Assert(!autostart.MigrateStartupShortcut(dir.Path, "PCDeviceManage.lnk"), "Expected nothing to migrate without a shortcut.");
+                    Assert(!autostart.IsEnabled, "Expected autostart to stay off.");
+
+                    File.WriteAllText(dir.File("PCDeviceManage.lnk"), string.Empty);
+                    Assert(autostart.MigrateStartupShortcut(dir.Path, "PCDeviceManage.lnk"), "Expected the shortcut to be migrated.");
+                    Assert(autostart.IsEnabled && !File.Exists(dir.File("PCDeviceManage.lnk")), "Expected the shortcut to be replaced by the Run value.");
+                }
+            });
+        }
+
+        private static void TrayResourcesAndConsoleUrl()
+        {
+            using (Stream icon = typeof(TrayApplicationContext).Assembly.GetManifestResourceStream("PCDeviceManage.app.ico"))
+            {
+                Assert(icon != null && icon.Length > 0, "Expected the tray icon to be embedded.");
+            }
+            Assert(TrayApplicationContext.ConsoleUrl(new AppSettings { WebHost = "+", WebPort = 9527 }) == "http://127.0.0.1:9527/", "Expected wildcard host to open localhost.");
+            Assert(TrayApplicationContext.ConsoleUrl(new AppSettings { WebHost = "192.168.1.5", WebPort = 80 }) == "http://192.168.1.5:80/", "Expected explicit host to be used.");
         }
 
         private static void LoginAcceptsOnlyCorrectToken()

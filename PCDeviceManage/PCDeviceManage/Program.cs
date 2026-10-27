@@ -1,102 +1,118 @@
 ﻿using log4net;
-using Monitorian.Supplement;
 using System;
 using System.Configuration;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
+using System.Linq;
 using System.Net.NetworkInformation;
-using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace PCDeviceManage
 {
-    class Program
+    static class Program
     {
+        private const string MutexName = @"Local\PCManage.PCDeviceManage";
+        // 旧版本在启动文件夹中创建的快捷方式名（Application.ProductName + ".lnk"）。
+        private const string LegacyStartupShortcut = "PCDeviceManage.lnk";
 
-        private static ILog _log = null;
+        private static ILog _log;
         private static AppSettings _settings;
         private static LocalWebServer _webServer;
         private static MonitorRegistry _monitorRegistry;
         private static ShutdownScheduler _shutdownScheduler;
         private static FrpTunnel _frpTunnel;
 
-        static void Main(string[] args)
+        [STAThread]
+        static void Main()
         {
             log4net.GlobalContext.Properties["pid"] = Process.GetCurrentProcess().Id;
             _log = LogManager.GetLogger(typeof(Program));
 
-            try
+            bool createdNew;
+            using (var mutex = new Mutex(true, MutexName, out createdNew))
             {
-                bool tokenCreated;
-                _settings = AppSettings.LoadOrCreate(AppSettings.DefaultPath, ConfigurationManager.AppSettings, AppSettings.LegacyTokenPath, out tokenCreated);
-                if (tokenCreated)
+                if (!createdNew)
                 {
-                    _log.Warn("已生成访问令牌并保存到 " + AppSettings.DefaultPath + "，打开控制台时在登录页输入该令牌。");
+                    MessageBox.Show("PC控制已经在运行，可以在任务栏通知区域找到它的图标。", "PC控制", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
                 }
-            }
-            catch (Exception ex)
-            {
-                _log.Error("读取配置失败", ex);
-                MessageBox.Show("读取配置失败：" + ex.Message, "PC控制", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
 
-            Start();
-            Application.ApplicationExit += (sender, eventArgs) => Stop();
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
 
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
-        }
-
-        private static void StartFrp()
-        {
-            _frpTunnel = new FrpTunnel(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "frp"), _settings.FrpEnabled, _log);
-            _frpTunnel.Start();
-        }
-
-        private static void StopFrp()
-        {
-            if (_frpTunnel != null)
-            {
-                _frpTunnel.Dispose();
-                _frpTunnel = null;
-            }
-        }
-
-        //打开Web服务端口
-        static bool OpenWebServer()
-        {
-            int port = _settings.WebPort;
-            string host = _settings.WebHost;
-            try
-            {
-                //开放端口前先判断该端口是否已存在。
-                IPGlobalProperties properties = IPGlobalProperties.GetIPGlobalProperties();
-                IPEndPoint[] ipendpoints = properties.GetActiveTcpListeners();
-                foreach (IPEndPoint ipendpoint in ipendpoints)
+                bool tokenCreated;
+                try
                 {
-                    if (ipendpoint.Port == port)
+                    _settings = AppSettings.LoadOrCreate(AppSettings.DefaultPath, ConfigurationManager.AppSettings, AppSettings.LegacyTokenPath, out tokenCreated);
+                    if (tokenCreated)
                     {
-                        _log.Warn($"检测到{port}端口已被使用，若网页无法正常访问请检查该端口是否被其它程序所使用并考虑更换端口号。");
-                        return true;
+                        _log.Warn("已生成访问令牌并保存到 " + AppSettings.DefaultPath + "，打开控制台时在登录页输入该令牌。");
                     }
                 }
-
-                if (_monitorRegistry == null)
+                catch (Exception ex)
                 {
-                    _monitorRegistry = new MonitorRegistry(new SystemMonitorEnumerator(), _log);
-                    _monitorRegistry.Start();
+                    _log.Error("读取配置失败", ex);
+                    MessageBox.Show("读取配置失败：" + ex.Message, "PC控制", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
                 }
 
-                var windowsManage = new WindowsManage();
-                if (_shutdownScheduler == null)
+                Autostart autostart = Autostart.ForCurrentUser(Application.ExecutablePath);
+                try
                 {
-                    _shutdownScheduler = new ShutdownScheduler(windowsManage.WindowsShutdown);
+                    if (autostart.MigrateStartupShortcut(Environment.GetFolderPath(Environment.SpecialFolder.Startup), LegacyStartupShortcut))
+                    {
+                        _log.Info("已将启动文件夹中的快捷方式迁移为注册表开机自启。");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _log.Warn("迁移旧的开机自启快捷方式失败", ex);
                 }
 
-                _webServer = new LocalWebServer(_monitorRegistry, new AudioService(), windowsManage, _shutdownScheduler, new TokenAuthenticator(_settings.AccessToken), port, host, _log);
+                try
+                {
+                    bool webStarted = Start();
+                    using (var tray = new TrayApplicationContext(_settings, _shutdownScheduler, _frpTunnel, autostart, tokenCreated, webStarted))
+                    {
+                        Application.Run(tray);
+                    }
+                }
+                finally
+                {
+                    Stop();
+                }
+            }
+        }
+
+        private static bool Start()
+        {
+            var windowsManage = new WindowsManage();
+            _shutdownScheduler = new ShutdownScheduler(windowsManage.WindowsShutdown);
+
+            _monitorRegistry = new MonitorRegistry(new SystemMonitorEnumerator(), _log);
+            _monitorRegistry.Start();
+
+            bool webStarted = StartWebServer(windowsManage);
+
+            _frpTunnel = new FrpTunnel(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "frp"), _settings.FrpEnabled, _log);
+            _frpTunnel.Start();
+            return webStarted;
+        }
+
+        private static bool StartWebServer(WindowsManage windowsManage)
+        {
+            int port = _settings.WebPort;
+            try
+            {
+                if (IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners().Any(x => x.Port == port))
+                {
+                    _log.Error($"端口 {port} 已被其它程序占用，请在 {AppSettings.DefaultPath} 中更换 webPort。");
+                    return false;
+                }
+
+                _webServer = new LocalWebServer(_monitorRegistry, new AudioService(), windowsManage, _shutdownScheduler,
+                    new TokenAuthenticator(_settings.AccessToken), port, _settings.WebHost, _log);
                 return _webServer.Start();
             }
             catch (Exception ex)
@@ -106,7 +122,7 @@ namespace PCDeviceManage
             }
         }
 
-        static void Stop()
+        private static void Stop()
         {
             try
             {
@@ -114,6 +130,11 @@ namespace PCDeviceManage
                 {
                     _webServer.Stop();
                     _webServer = null;
+                }
+                if (_frpTunnel != null)
+                {
+                    _frpTunnel.Dispose();
+                    _frpTunnel = null;
                 }
                 if (_monitorRegistry != null)
                 {
@@ -125,103 +146,11 @@ namespace PCDeviceManage
                     _shutdownScheduler.Dispose();
                     _shutdownScheduler = null;
                 }
-                StopFrp();
             }
             catch (Exception ex)
             {
                 _log.Error("停止服务出错", ex);
             }
         }
-
-        public static void Start()
-        {
-            //打开Web服务
-            OpenWebServer();
-
-            //打开Frp端口映射
-            StartFrp();
-
-            //To do something
-        }
-
-        public class Service
-        {
-            public void Start()
-            {
-                OpenWebServer();
-
-                //To do something
-            }
-            public void Stop()
-            {
-                Program.Stop();
-            }
-        }
-
-        /// <summary>
-        /// 验证某个IP是否可ping通
-        /// </summary>
-        /// <param name="strIP">要验证的IP</param>
-        /// <returns>是否可连通  是：true 否：false</returns>
-        public static bool TestNetConnectity(string strIP)
-        {
-            if (!CheckIPAddr(strIP))
-            {
-                return false;
-            }
-            // Windows L2TP VPN和非Windows VPN使用ping VPN服务端的方式获取是否可以连通
-            Ping pingSender = new Ping();
-            PingOptions options = new PingOptions();
-
-            // Use the default Ttl value which is 128,
-            // but change the fragmentation behavior.
-            options.DontFragment = true;
-
-            // Create a buffer of 32 bytes of data to be transmitted.
-            string data = "testtesttesttesttesttesttesttest";
-            byte[] buffer = Encoding.ASCII.GetBytes(data);
-            int timeout = 120;
-            PingReply reply = pingSender.Send(strIP, timeout, buffer, options);
-
-            return (reply.Status == IPStatus.Success);
-        }
-
-        /// <summary>
-        /// 验证IP地址字符串的正确性
-        /// </summary>
-        /// <param name="strIP">要验证的IP地址字符串</param>
-        /// <returns>格式是否正确，正确为 true 否则为 false</returns>
-        public static bool CheckIPAddr(string strIP)
-        {
-            if (string.IsNullOrEmpty(strIP))
-            {
-                return false;
-            }
-            // 保持要返回的信息
-            bool bRes = true;
-            int iTmp = 0;    // 保持每个由“.”分隔的整型
-            string[] ipSplit = strIP.Split('.');
-            if (ipSplit.Length < 4 || string.IsNullOrEmpty(ipSplit[0]) ||
-                string.IsNullOrEmpty(ipSplit[1]) ||
-                string.IsNullOrEmpty(ipSplit[2]) ||
-                string.IsNullOrEmpty(ipSplit[3]))
-            {
-                bRes = false;
-            }
-            else
-            {
-                for (int i = 0; i < ipSplit.Length; i++)
-                {
-                    if (!int.TryParse(ipSplit[i], out iTmp) || iTmp < 0 || iTmp > 255)
-                    {
-                        bRes = false;
-                        break;
-                    }
-                }
-            }
-
-            return bRes;
-        }
-
     }
 }
