@@ -1,5 +1,5 @@
-using CoreAudioApi;
 using log4net;
+using NAudio.CoreAudioApi;
 using System;
 
 namespace PCDeviceManage
@@ -14,20 +14,22 @@ namespace PCDeviceManage
 
         public int GetVolume()
         {
-            MMDevice device = GetDefaultDevice();
-            return (int)Math.Round(device.AudioEndpointVolume.MasterVolumeLevelScalar * 100f, MidpointRounding.AwayFromZero);
+            using (var enumerator = new MMDeviceEnumerator())
+            using (MMDevice device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia))
+            {
+                return (int)Math.Round(device.AudioEndpointVolume.MasterVolumeLevelScalar * 100f, MidpointRounding.AwayFromZero);
+            }
         }
 
         public void SetVolume(int volume)
         {
             int clamped = Math.Max(0, Math.Min(100, volume));
-            GetDefaultDevice().AudioEndpointVolume.MasterVolumeLevelScalar = clamped / 100f;
+            using (var enumerator = new MMDeviceEnumerator())
+            using (MMDevice device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia))
+            {
+                device.AudioEndpointVolume.MasterVolumeLevelScalar = clamped / 100f;
+            }
             _log.Info("Set volume to " + clamped + ".");
-        }
-
-        private static MMDevice GetDefaultDevice()
-        {
-            return new MMDeviceEnumerator().GetDefaultAudioEndpoint(EDataFlow.eRender, ERole.eMultimedia);
         }
     }
 }
