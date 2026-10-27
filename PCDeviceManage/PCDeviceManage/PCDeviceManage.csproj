@@ -98,6 +98,7 @@
     <Compile Include="Web\IndexPage.cs" />
     <Compile Include="Web\LocalWebServer.cs" />
     <Compile Include="Web\LoginPage.cs" />
+    <Compile Include="Web\RequestGuard.cs" />
     <Compile Include="Web\TokenAuthenticator.cs" />
     <Compile Include="Monitor\DdcMonitorItem.cs" />
     <Compile Include="Monitor\DisplayContext.cs" />

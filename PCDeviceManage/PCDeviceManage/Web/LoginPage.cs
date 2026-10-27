@@ -132,7 +132,7 @@ namespace PCDeviceManage
             error.textContent = """";
             fetch(""/api/login"", {
                 method: ""POST"",
-                headers: { ""Content-Type"": ""application/x-www-form-urlencoded"" },
+                headers: { ""Content-Type"": ""application/x-www-form-urlencoded"", ""X-PCM-Request"": ""1"" },
                 body: new URLSearchParams(new FormData(form))
             }).then(response => {
                 if (response.ok) {

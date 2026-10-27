@@ -23,6 +23,8 @@ namespace PCDeviceManage.Tests
                 Test(nameof(TokenIsGeneratedOnceAndReused), TokenIsGeneratedOnceAndReused),
                 Test(nameof(WebServerRequiresLogin), WebServerRequiresLogin),
                 Test(nameof(WebServerAcceptsTokenHeader), WebServerAcceptsTokenHeader),
+                Test(nameof(RequestGuardRequiresHeaderAndSameOrigin), RequestGuardRequiresHeaderAndSameOrigin),
+                Test(nameof(WebServerRejectsUnsafeStateChanges), WebServerRejectsUnsafeStateChanges),
             };
 
             int failed = 0;
@@ -206,6 +208,40 @@ namespace PCDeviceManage.Tests
             }
         }
 
+        private static void RequestGuardRequiresHeaderAndSameOrigin()
+        {
+            Assert(!RequestGuard.IsTrustedPost(null, null, "pc:9527", null), "Expected missing CSRF header to be rejected.");
+            Assert(!RequestGuard.IsTrustedPost(null, "0", "pc:9527", null), "Expected wrong CSRF header value to be rejected.");
+            Assert(RequestGuard.IsTrustedPost(null, "1", "pc:9527", null), "Expected header without Origin to pass.");
+            Assert(RequestGuard.IsTrustedPost("http://PC:9527", "1", "pc:9527", null), "Expected same origin to pass.");
+            Assert(RequestGuard.IsTrustedPost("http://pc", "1", "pc:80", null), "Expected default port to match.");
+            Assert(!RequestGuard.IsTrustedPost("http://evil.example", "1", "pc:9527", null), "Expected foreign origin to be rejected.");
+            Assert(!RequestGuard.IsTrustedPost("http://pc:9999", "1", "pc:9527", null), "Expected different port to be rejected.");
+            Assert(!RequestGuard.IsTrustedPost("null", "1", "pc:9527", null), "Expected opaque origin to be rejected.");
+            Assert(RequestGuard.IsTrustedPost("https://pc.example.com", "1", "127.0.0.1:9527", "pc.example.com"), "Expected X-Forwarded-Host to be accepted.");
+        }
+
+        private static void WebServerRejectsUnsafeStateChanges()
+        {
+            using (var server = new TestServer())
+            {
+                server.Send("POST", "/api/login", "token=" + Uri.EscapeDataString(TestServer.Token));
+
+                // 只用 seconds=0（取消定时关机）验证，不会真的触发关机。
+                Assert(server.Send("GET", "/Home/TimingShutdown?seconds=0").StatusCode == HttpStatusCode.MethodNotAllowed, "Expected GET state change to be rejected.");
+                Assert(server.Send("GET", "/Home/LockWindows").StatusCode == HttpStatusCode.MethodNotAllowed, "Expected GET lock to be rejected.");
+                Assert(server.Send("POST", "/Home/TimingShutdown", "seconds=0", null, false).StatusCode == HttpStatusCode.Forbidden, "Expected POST without CSRF header to be rejected.");
+                Assert(server.Send("POST", "/api/logout", null, null, false).StatusCode == HttpStatusCode.Forbidden, "Expected logout without CSRF header to be rejected.");
+
+                var foreign = new Dictionary<string, string> { { "Origin", "http://evil.example" } };
+                Assert(server.Send("POST", "/Home/TimingShutdown", "seconds=0", foreign).StatusCode == HttpStatusCode.Forbidden, "Expected cross-origin POST to be rejected.");
+
+                Assert(server.Send("POST", "/Home/TimingShutdown", "seconds=0").StatusCode == HttpStatusCode.OK, "Expected trusted POST to succeed.");
+                Assert(server.Send("POST", "/api/logout").StatusCode == HttpStatusCode.OK, "Expected logout to succeed.");
+                Assert(server.Send("GET", "/Home/GetShutdownTimingVal").StatusCode == HttpStatusCode.Unauthorized, "Expected session to be cleared by logout.");
+            }
+        }
+
         private sealed class TestServer : IDisposable
         {
             public const string Token = "integration-token";
@@ -232,12 +268,16 @@ namespace PCDeviceManage.Tests
                 Assert(_server.Start(), "Expected test web server to start.");
             }
 
-            public HttpWebResponse Send(string method, string path, string form = null, IDictionary<string, string> headers = null)
+            public HttpWebResponse Send(string method, string path, string form = null, IDictionary<string, string> headers = null, bool csrfHeader = true)
             {
                 var request = (HttpWebRequest)WebRequest.Create("http://127.0.0.1:" + _port + path);
                 request.Method = method;
                 request.AllowAutoRedirect = false;
                 request.CookieContainer = _cookies;
+                if (method == "POST" && csrfHeader)
+                {
+                    request.Headers[RequestGuard.CsrfHeaderName] = "1";
+                }
                 if (headers != null)
                 {
                     foreach (var header in headers)

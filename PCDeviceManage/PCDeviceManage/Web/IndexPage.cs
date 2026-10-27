@@ -296,18 +296,28 @@ namespace PCDeviceManage
         let shutdownSeconds = 0;
         let countdownTimer = null;
 
-        function requestText(url) {
-            return fetch(url, { cache: ""no-store"" }).then(response => {
+        function requestText(url, params) {
+            const options = { cache: ""no-store"" };
+            if (params) {
+                options.method = ""POST"";
+                options.headers = { ""Content-Type"": ""application/x-www-form-urlencoded"", ""X-PCM-Request"": ""1"" };
+                options.body = new URLSearchParams(params);
+            }
+            return fetch(url, options).then(response => {
                 if (response.status === 401) location.replace(""/login"");
                 if (!response.ok) throw new Error(response.status);
                 return response.text();
             });
         }
 
-        function send(url) {
-            return requestText(url)
+        function send(url, params) {
+            return requestText(url, params)
                 .then(text => { setStatus(""\u5DF2\u8FDE\u63A5"", ""ok""); return text; })
                 .catch(error => { setStatus(""\u8FDE\u63A5\u5931\u8D25"", ""error""); throw error; });
+        }
+
+        function post(url, params) {
+            return send(url, params || {});
         }
 
         function setStatus(text, state) {
@@ -382,7 +392,7 @@ namespace PCDeviceManage
 
                 row.appendChild(label);
                 row.appendChild(createSlider(item.Brightness, name + "" \u4EAE\u5EA6"", value =>
-                    send(""/Home/SetBrightness?brightness="" + encodeURIComponent(value) + ""&IsInternal="" + encodeURIComponent(item.IsInternal)).catch(() => {})));
+                    post(""/Home/SetBrightness"", { brightness: value, IsInternal: item.IsInternal }).catch(() => {})));
                 displayList.appendChild(row);
             });
         }
@@ -402,7 +412,7 @@ namespace PCDeviceManage
             }).catch(() => {});
         }
 
-        const sendVolume = throttle(value => send(""/Home/SetVolume?volume="" + encodeURIComponent(value)).catch(() => {}), 150);
+        const sendVolume = throttle(value => post(""/Home/SetVolume"", { volume: value }).catch(() => {}), 150);
 
         function formatDuration(totalSeconds) {
             const h = Math.floor(totalSeconds / 3600);
@@ -445,13 +455,13 @@ namespace PCDeviceManage
         function applyShutdown(minutes) {
             const normalized = Math.max(0, parseInt(minutes || 0, 10) || 0);
             const seconds = normalized * 60;
-            send(""/Home/TimingShutdown?minute="" + encodeURIComponent(seconds))
+            post(""/Home/TimingShutdown"", { seconds: seconds })
                 .then(() => startCountdown(seconds))
                 .catch(() => {});
         }
 
         function confirmed(message, url) {
-            if (window.confirm(message)) send(url).catch(() => {});
+            if (window.confirm(message)) post(url).catch(() => {});
         }
 
         volumeRange.addEventListener(""input"", () => {
@@ -475,7 +485,7 @@ namespace PCDeviceManage
             if (event.key === ""Enter"") $(""applyShutdown"").click();
         });
         $(""cancelShutdown"").addEventListener(""click"", () => applyShutdown(0));
-        $(""lockWindows"").addEventListener(""click"", () => send(""/Home/LockWindows"").catch(() => {}));
+        $(""lockWindows"").addEventListener(""click"", () => post(""/Home/LockWindows"").catch(() => {}));
         $(""shutdownNow"").addEventListener(""click"", () => confirmed(""\u786E\u5B9A\u7ACB\u5373\u5173\u673A\uFF1F"", ""/Home/WindowsShutdown""));
         $(""restartNow"").addEventListener(""click"", () => confirmed(""\u786E\u5B9A\u7ACB\u5373\u91CD\u542F\uFF1F"", ""/Home/WindowsRestart""));
 

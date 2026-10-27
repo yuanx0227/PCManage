@@ -1,5 +1,6 @@
 using log4net;
 using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Globalization;
 using System.IO;
@@ -20,6 +21,19 @@ namespace PCDeviceManage
         private readonly ILog _log;
         private HttpListener _listener;
         private Task _listenTask;
+
+        // 会改变状态的接口只接受 POST，并经过 RequestGuard 校验。
+        private static readonly HashSet<string> PostOnlyPaths = new HashSet<string>
+        {
+            "/api/login",
+            "/api/logout",
+            "/home/setbrightness",
+            "/home/setvolume",
+            "/home/lockwindows",
+            "/home/windowsshutdown",
+            "/home/windowsrestart",
+            "/home/timingshutdown"
+        };
 
         private static readonly object TimerLocker = new object();
         private static System.Timers.Timer _timer;
@@ -121,12 +135,6 @@ namespace PCDeviceManage
         {
             try
             {
-                if (context.Request.HttpMethod.Equals("OPTIONS", StringComparison.OrdinalIgnoreCase))
-                {
-                    WriteText(context.Response, string.Empty);
-                    return;
-                }
-
                 string path = context.Request.Url.AbsolutePath.TrimEnd('/').ToLowerInvariant();
                 if (path == "/favicon.ico")
                 {
@@ -138,6 +146,11 @@ namespace PCDeviceManage
                 if (path == "/login")
                 {
                     WriteHtml(context.Response, LoginPage.Html);
+                    return;
+                }
+
+                if (PostOnlyPaths.Contains(path) && !IsAllowedPost(context))
+                {
                     return;
                 }
 
@@ -182,13 +195,13 @@ namespace PCDeviceManage
                         WriteText(context.Response, _displayManage.GetDisplayList());
                         break;
                     case "/home/setbrightness":
-                        WriteText(context.Response, SetBrightness(context.Request).ToString());
+                        WriteText(context.Response, SetBrightness(ReadParameters(context.Request)).ToString());
                         break;
                     case "/home/getvolume":
                         WriteText(context.Response, _audioManage.GetVolume().ToString());
                         break;
                     case "/home/setvolume":
-                        WriteText(context.Response, SetVolume(context.Request).ToString());
+                        WriteText(context.Response, SetVolume(ReadParameters(context.Request)).ToString());
                         break;
                     case "/home/lockwindows":
                         WriteText(context.Response, LockWindows(context.Request));
@@ -202,7 +215,7 @@ namespace PCDeviceManage
                         WriteText(context.Response, "true");
                         break;
                     case "/home/timingshutdown":
-                        WriteText(context.Response, TimingShutdown(context.Request));
+                        WriteText(context.Response, TimingShutdown(ReadParameters(context.Request)));
                         break;
                     case "/home/getshutdowntimingval":
                         WriteText(context.Response, GetShutdownTimingVal());
@@ -234,16 +247,34 @@ namespace PCDeviceManage
             return !string.IsNullOrEmpty(headerToken) && _authenticator.TryLogin(headerToken).Status == LoginStatus.Succeeded;
         }
 
-        private void Login(HttpListenerContext context)
+        private bool IsAllowedPost(HttpListenerContext context)
         {
-            if (!context.Request.HttpMethod.Equals("POST", StringComparison.OrdinalIgnoreCase))
+            HttpListenerRequest request = context.Request;
+            if (!request.HttpMethod.Equals("POST", StringComparison.OrdinalIgnoreCase))
             {
                 context.Response.StatusCode = 405;
                 context.Response.AppendHeader("Allow", "POST");
                 WriteText(context.Response, "Method Not Allowed");
-                return;
+                return false;
             }
 
+            if (!RequestGuard.IsTrustedPost(
+                request.Headers["Origin"],
+                request.Headers[RequestGuard.CsrfHeaderName],
+                request.Headers["Host"],
+                request.Headers["X-Forwarded-Host"]))
+            {
+                _log.Warn("Rejected untrusted POST " + request.Url.AbsolutePath + ". Origin: " + request.Headers["Origin"] + " Remote: " + request.RemoteEndPoint);
+                context.Response.StatusCode = 403;
+                WriteText(context.Response, "Forbidden");
+                return false;
+            }
+
+            return true;
+        }
+
+        private void Login(HttpListenerContext context)
+        {
             LoginResult result = _authenticator.TryLogin(ReadForm(context.Request)["token"]);
             switch (result.Status)
             {
@@ -274,6 +305,20 @@ namespace PCDeviceManage
         {
             return request.IsSecureConnection ||
                 string.Equals(request.Headers["X-Forwarded-Proto"], "https", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 合并查询字符串和表单参数，表单优先。
+        /// </summary>
+        private static NameValueCollection ReadParameters(HttpListenerRequest request)
+        {
+            var parameters = new NameValueCollection(request.QueryString);
+            NameValueCollection form = ReadForm(request);
+            foreach (string key in form)
+            {
+                parameters[key] = form[key];
+            }
+            return parameters;
         }
 
         private static NameValueCollection ReadForm(HttpListenerRequest request)
@@ -307,25 +352,25 @@ namespace PCDeviceManage
             return form;
         }
 
-        private bool SetBrightness(HttpListenerRequest request)
+        private bool SetBrightness(NameValueCollection parameters)
         {
             int brightness;
             bool isInternal;
-            if (!int.TryParse(request.QueryString["brightness"], out brightness))
+            if (!int.TryParse(parameters["brightness"], out brightness))
             {
                 brightness = 0;
             }
-            if (!bool.TryParse(request.QueryString["IsInternal"], out isInternal))
+            if (!bool.TryParse(parameters["IsInternal"], out isInternal))
             {
                 isInternal = false;
             }
             return _displayManage.SetDisplayBrightness(brightness, isInternal);
         }
 
-        private bool SetVolume(HttpListenerRequest request)
+        private bool SetVolume(NameValueCollection parameters)
         {
             int volume;
-            if (!int.TryParse(request.QueryString["volume"], out volume))
+            if (!int.TryParse(parameters["volume"], out volume))
             {
                 volume = 0;
             }
@@ -339,10 +384,11 @@ namespace PCDeviceManage
             return "true";
         }
 
-        private string TimingShutdown(HttpListenerRequest request)
+        private string TimingShutdown(NameValueCollection parameters)
         {
+            // 旧参数名 minute 实际传的就是秒数，保留兼容。
             int seconds;
-            if (!int.TryParse(request.QueryString["minute"], out seconds))
+            if (!int.TryParse(parameters["seconds"] ?? parameters["minute"], out seconds))
             {
                 seconds = 0;
             }
