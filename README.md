@@ -32,7 +32,9 @@ PCManage is a lightweight Windows device-control tool that exposes a local web c
 2. 把 `frp\frpc.example.ini` 复制为 `frp\frpc.ini`，填写服务器地址和 `token`；frps 侧也要配置相同的 `authentication_method = token` 和 `token`。
 3. 尽量用 HTTPS 访问（示例配置中的 `https2http` 方式），否则访问令牌会以明文在公网上传输。只是自己用的话，更推荐 Tailscale / ZeroTier 这类组网工具，完全不把端口暴露到公网。
 
-`frpc.ini` 和 `frpc.exe` 已加入 `.gitignore`。没有这两个文件时，程序会跳过 frp，只提供本机访问。
+`frpc.ini` 和 `frpc.exe` 已加入 `.gitignore`。没有这两个文件（或 `settings.json` 中 `frpEnabled` 为 `false`）时，程序会跳过 frp，只提供本机访问。
+
+frpc 由程序直接作为子进程启动：输出写入日志，意外退出后自动重启（间隔从 5 秒逐步加长到 5 分钟），程序退出或崩溃时 frpc 会一起结束。
 
 # 开发
 

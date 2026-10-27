@@ -19,6 +19,7 @@ namespace PCDeviceManage
         private static LocalWebServer _webServer;
         private static MonitorRegistry _monitorRegistry;
         private static ShutdownScheduler _shutdownScheduler;
+        private static FrpTunnel _frpTunnel;
 
         static void Main(string[] args)
         {
@@ -49,49 +50,19 @@ namespace PCDeviceManage
             Application.Run(new Form1());
         }
 
-        /// <summary>
-        /// 打开frp连接bat
-        /// </summary>
         private static void StartFrp()
         {
-            if (!_settings.FrpEnabled)
-            {
-                _log.Info("配置中已关闭 frp 端口映射。");
-                return;
-            }
-
-            string frpDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "frp");
-            if (!File.Exists(Path.Combine(frpDirectory, "frpc.exe")) || !File.Exists(Path.Combine(frpDirectory, "frpc.ini")))
-            {
-                _log.Info("未找到 frp\\frpc.exe 或 frp\\frpc.ini，跳过 frp 端口映射。配置方法见 frp\\frpc.example.ini。");
-                return;
-            }
-
-            try
-            {
-                System.Diagnostics.ProcessStartInfo myStartInfo = new System.Diagnostics.ProcessStartInfo();
-                myStartInfo.FileName = Path.Combine(frpDirectory, "frpStart.bat");
-                myStartInfo.WorkingDirectory = frpDirectory;
-                System.Diagnostics.Process myProcess = new System.Diagnostics.Process();
-                myProcess.StartInfo = myStartInfo;
-                myProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                myProcess.Start();
-                //myProcess.WaitForExit(); //等待程序退出
-                _log.Info("frp端口映射启动成功");
-
-            }
-            catch (Exception ex)
-            {
-                _log.Error("frp启动出错", ex);
-            }
+            _frpTunnel = new FrpTunnel(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "frp"), _settings.FrpEnabled, _log);
+            _frpTunnel.Start();
         }
-        
-        /// <summary>
-        /// kll Frp进程
-        /// </summary>
-        private static void StopFrp() 
+
+        private static void StopFrp()
         {
-            
+            if (_frpTunnel != null)
+            {
+                _frpTunnel.Dispose();
+                _frpTunnel = null;
+            }
         }
 
         //打开Web服务端口

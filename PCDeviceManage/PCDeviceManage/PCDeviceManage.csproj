@@ -163,6 +163,7 @@
     <Compile Include="Audio\SessionCollection.cs" />
     <Compile Include="Audio\SimpleAudioVolume.cs" />
     <Compile Include="Manage\WindowsManage.cs" />
+    <Compile Include="Tunnel\FrpTunnel.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -171,9 +172,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="frp\frpc.example.ini">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="frp\frpStart.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="frp\LICENSE">
