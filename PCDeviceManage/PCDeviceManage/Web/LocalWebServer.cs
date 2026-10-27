@@ -16,6 +16,7 @@ namespace PCDeviceManage
         private readonly MonitorRegistry _monitorRegistry;
         private readonly AudioService _audioService;
         private readonly WindowsManage _windowsManage;
+        private readonly ShutdownScheduler _shutdownScheduler;
         private readonly TokenAuthenticator _authenticator;
         private readonly int _port;
         private readonly string _host;
@@ -36,15 +37,11 @@ namespace PCDeviceManage
             "/home/timingshutdown"
         };
 
-        private static readonly object TimerLocker = new object();
-        private static System.Timers.Timer _timer;
-        private static int _shutdownTimingVal;
-        private static int _elapsedSeconds;
-
         public LocalWebServer(
             MonitorRegistry monitorRegistry,
             AudioService audioService,
             WindowsManage windowsManage,
+            ShutdownScheduler shutdownScheduler,
             TokenAuthenticator authenticator,
             int port,
             string host,
@@ -53,6 +50,7 @@ namespace PCDeviceManage
             _monitorRegistry = monitorRegistry ?? throw new ArgumentNullException(nameof(monitorRegistry));
             _audioService = audioService;
             _windowsManage = windowsManage;
+            _shutdownScheduler = shutdownScheduler ?? throw new ArgumentNullException(nameof(shutdownScheduler));
             _authenticator = authenticator ?? throw new ArgumentNullException(nameof(authenticator));
             _port = port;
             _host = string.IsNullOrWhiteSpace(host) ? "127.0.0.1" : host.Trim();
@@ -86,15 +84,6 @@ namespace PCDeviceManage
         public void Stop()
         {
             DisposeListener();
-            lock (TimerLocker)
-            {
-                if (_timer != null)
-                {
-                    _timer.Stop();
-                    _timer.Dispose();
-                    _timer = null;
-                }
-            }
         }
 
         private string BuildPrefix()
@@ -226,7 +215,7 @@ namespace PCDeviceManage
                         WriteText(context.Response, TimingShutdown(ReadParameters(context.Request)));
                         break;
                     case "/home/getshutdowntimingval":
-                        WriteText(context.Response, GetShutdownTimingVal());
+                        WriteText(context.Response, _shutdownScheduler.RemainingSeconds.ToString(CultureInfo.InvariantCulture));
                         break;
                     default:
                         context.Response.StatusCode = 404;
@@ -434,60 +423,8 @@ namespace PCDeviceManage
                 seconds = 0;
             }
 
-            lock (TimerLocker)
-            {
-                EnsureTimer();
-                _elapsedSeconds = 0;
-
-                if (seconds <= 0)
-                {
-                    _timer.Stop();
-                    _shutdownTimingVal = 0;
-                }
-                else
-                {
-                    _shutdownTimingVal = seconds;
-                    _timer.Start();
-                }
-            }
-
+            _shutdownScheduler.Schedule(TimeSpan.FromSeconds(seconds));
             return "true";
-        }
-
-        private void EnsureTimer()
-        {
-            if (_timer != null)
-            {
-                return;
-            }
-
-            _timer = new System.Timers.Timer(1000);
-            _timer.AutoReset = true;
-            _timer.Elapsed += TimerUp;
-        }
-
-        private void TimerUp(object sender, System.Timers.ElapsedEventArgs e)
-        {
-            lock (TimerLocker)
-            {
-                _elapsedSeconds++;
-                if (_elapsedSeconds >= _shutdownTimingVal && _shutdownTimingVal > 0)
-                {
-                    _timer.Stop();
-                    _shutdownTimingVal = 0;
-                    _elapsedSeconds = 0;
-                    _windowsManage.WindowsShutdown();
-                }
-            }
-        }
-
-        private string GetShutdownTimingVal()
-        {
-            lock (TimerLocker)
-            {
-                int remaining = _shutdownTimingVal == 0 ? 0 : _shutdownTimingVal - _elapsedSeconds;
-                return remaining.ToString();
-            }
         }
 
         private static void WriteHtml(HttpListenerResponse response, string content)

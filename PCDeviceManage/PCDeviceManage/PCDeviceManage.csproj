@@ -94,6 +94,7 @@
     </Compile>
     <Compile Include="Manage\AudioService.cs" />
     <Compile Include="Manage\MonitorDevices.cs" />
+    <Compile Include="Manage\ShutdownScheduler.cs" />
     <Compile Include="Manage\MonitorRegistry.cs" />
     <Compile Include="Manage\SystemMonitorEnumerator.cs" />
     <Compile Include="Web\IndexPage.cs" />

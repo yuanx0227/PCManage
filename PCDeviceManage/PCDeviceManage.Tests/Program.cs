@@ -24,6 +24,10 @@ namespace PCDeviceManage.Tests
                 Test(nameof(UnknownAndUnsupportedMonitorsAreRejected), UnknownAndUnsupportedMonitorsAreRejected),
                 Test(nameof(ConcurrentWritesKeepLatestValue), ConcurrentWritesKeepLatestValue),
                 Test(nameof(WebServerSetsBrightnessById), WebServerSetsBrightnessById),
+                Test(nameof(SchedulerWarnsOnceThenShutsDown), SchedulerWarnsOnceThenShutsDown),
+                Test(nameof(SchedulerCancelPreventsShutdown), SchedulerCancelPreventsShutdown),
+                Test(nameof(SchedulerUsesWallClockAfterSleep), SchedulerUsesWallClockAfterSleep),
+                Test(nameof(WebServerSchedulesShutdown), WebServerSchedulesShutdown),
                 Test(nameof(LoginAcceptsOnlyCorrectToken), LoginAcceptsOnlyCorrectToken),
                 Test(nameof(LoginLocksAfterRepeatedFailures), LoginLocksAfterRepeatedFailures),
                 Test(nameof(SuccessfulLoginResetsFailureCount), SuccessfulLoginResetsFailureCount),
@@ -203,6 +207,88 @@ namespace PCDeviceManage.Tests
             return registry;
         }
 
+        private static void SchedulerWarnsOnceThenShutsDown()
+        {
+            var now = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            int shutdowns = 0;
+            int warnings = 0;
+            using (var scheduler = new ShutdownScheduler(() => shutdowns++, () => now, TimeSpan.FromMinutes(1)))
+            {
+                scheduler.Warning += (s, e) => warnings++;
+                scheduler.Schedule(TimeSpan.FromMinutes(5));
+                Assert(scheduler.RemainingSeconds == 300 && scheduler.Deadline == now.AddMinutes(5), "Expected deadline five minutes ahead.");
+
+                now = now.AddMinutes(3);
+                scheduler.Poll();
+                Assert(warnings == 0 && shutdowns == 0, "Expected nothing before the warning window.");
+
+                now = now.AddSeconds(61);
+                scheduler.Poll();
+                scheduler.Poll();
+                Assert(warnings == 1 && shutdowns == 0, "Expected exactly one warning inside the last minute.");
+                Assert(scheduler.RemainingSeconds == 59, "Expected 59 seconds remaining.");
+
+                now = now.AddSeconds(59);
+                scheduler.Poll();
+                scheduler.Poll();
+                Assert(shutdowns == 1, "Expected exactly one shutdown at the deadline.");
+                Assert(scheduler.Deadline == null && scheduler.RemainingSeconds == 0, "Expected schedule to clear after shutdown.");
+            }
+        }
+
+        private static void SchedulerCancelPreventsShutdown()
+        {
+            var now = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            int shutdowns = 0;
+            int changes = 0;
+            using (var scheduler = new ShutdownScheduler(() => shutdowns++, () => now))
+            {
+                scheduler.Changed += (s, e) => changes++;
+                scheduler.Schedule(TimeSpan.FromMinutes(10));
+                scheduler.Schedule(TimeSpan.Zero);
+                Assert(scheduler.Deadline == null && changes == 2, "Expected zero delay to cancel.");
+
+                scheduler.Schedule(TimeSpan.FromMinutes(10));
+                scheduler.Cancel();
+                scheduler.Cancel();
+                Assert(changes == 4, "Expected a second cancel to be a no-op.");
+
+                now = now.AddHours(1);
+                scheduler.Poll();
+                Assert(shutdowns == 0, "Expected cancelled schedule not to shut down.");
+            }
+        }
+
+        private static void SchedulerUsesWallClockAfterSleep()
+        {
+            var now = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            int shutdowns = 0;
+            using (var scheduler = new ShutdownScheduler(() => shutdowns++, () => now))
+            {
+                scheduler.Schedule(TimeSpan.FromMinutes(10));
+                now = now.AddMinutes(30); // 电脑睡眠了 30 分钟，计时器期间没有触发
+                scheduler.Poll();
+                Assert(shutdowns == 1, "Expected overdue schedule to shut down on wake.");
+            }
+        }
+
+        private static void WebServerSchedulesShutdown()
+        {
+            using (var server = new TestServer())
+            {
+                server.Send("POST", "/api/login", "token=" + Uri.EscapeDataString(TestServer.Token));
+                Assert(server.Send("POST", "/Home/TimingShutdown", "seconds=600").StatusCode == HttpStatusCode.OK, "Expected schedule to succeed.");
+                Assert(server.Scheduler.Deadline.HasValue, "Expected scheduler to hold a deadline.");
+
+                server.Send("GET", "/Home/GetShutdownTimingVal");
+                int remaining = int.Parse(server.LastBody);
+                Assert(remaining > 590 && remaining <= 600, "Expected about 600 seconds remaining, got " + remaining);
+
+                Assert(server.Send("POST", "/Home/TimingShutdown", "seconds=0").StatusCode == HttpStatusCode.OK, "Expected cancel to succeed.");
+                Assert(!server.Scheduler.Deadline.HasValue && server.ShutdownCalls == 0, "Expected schedule to be cancelled without shutting down.");
+            }
+        }
+
         private static void LoginAcceptsOnlyCorrectToken()
         {
             var auth = new TokenAuthenticator("secret-token");
@@ -360,10 +446,14 @@ namespace PCDeviceManage.Tests
             private readonly int _port;
 
             public string LastBody { get; private set; }
+            public ShutdownScheduler Scheduler { get; }
+            public int ShutdownCalls { get; private set; }
 
             public TestServer(MonitorRegistry registry = null)
             {
                 _registry = registry ?? CreateRegistry(new FakeMonitor("aaaa0001", "Test Panel"));
+                // 测试绝不能真的关机：关机动作只计数。
+                Scheduler = new ShutdownScheduler(() => ShutdownCalls++);
 
                 var listener = new TcpListener(IPAddress.Loopback, 0);
                 listener.Start();
@@ -374,6 +464,7 @@ namespace PCDeviceManage.Tests
                     _registry,
                     new AudioService(),
                     new WindowsManage(),
+                    Scheduler,
                     new TokenAuthenticator(Token),
                     _port,
                     "127.0.0.1",
@@ -435,6 +526,7 @@ namespace PCDeviceManage.Tests
             {
                 _server.Dispose();
                 _registry.Dispose();
+                Scheduler.Dispose();
             }
         }
 

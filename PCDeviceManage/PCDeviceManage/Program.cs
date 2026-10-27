@@ -17,6 +17,7 @@ namespace PCDeviceManage
         private static ILog _log = null;
         private static LocalWebServer _webServer;
         private static MonitorRegistry _monitorRegistry;
+        private static ShutdownScheduler _shutdownScheduler;
 
         static void Main(string[] args)
         {
@@ -95,7 +96,13 @@ namespace PCDeviceManage
                     _monitorRegistry.Start();
                 }
 
-                _webServer = new LocalWebServer(_monitorRegistry, new AudioService(), new WindowsManage(), CreateAuthenticator(), port, host, _log);
+                var windowsManage = new WindowsManage();
+                if (_shutdownScheduler == null)
+                {
+                    _shutdownScheduler = new ShutdownScheduler(windowsManage.WindowsShutdown);
+                }
+
+                _webServer = new LocalWebServer(_monitorRegistry, new AudioService(), windowsManage, _shutdownScheduler, CreateAuthenticator(), port, host, _log);
                 return _webServer.Start();
             }
             catch (Exception ex)
@@ -151,6 +158,11 @@ namespace PCDeviceManage
                 {
                     _monitorRegistry.Dispose();
                     _monitorRegistry = null;
+                }
+                if (_shutdownScheduler != null)
+                {
+                    _shutdownScheduler.Dispose();
+                    _shutdownScheduler = null;
                 }
                 StopFrp();
             }
