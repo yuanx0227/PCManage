@@ -12,7 +12,7 @@ PCManage is a lightweight Windows device-control tool that exposes a local web c
 控制台需要登录后才能使用。首次运行时会自动生成访问令牌，保存在程序目录（`PCDeviceManage.exe` 所在目录）下的 `access_token` 文件中，也可以改成自己的值（重启程序生效）。浏览器打开控制台后，在登录页输入令牌即可，也可以在托盘菜单中选择“复制访问令牌”。程序目录需要有写权限。
 
 ## 配置
-配置文件是 `%LocalAppData%\PCManage\settings.json`：
+配置文件是程序目录下的 `settings.json`（首次运行时生成）：
 
 | 字段 | 默认值 | 说明 |
 |---|---|---|
@@ -20,7 +20,7 @@ PCManage is a lightweight Windows device-control tool that exposes a local web c
 | `webPort` | `9527` | 端口，frp 示例配置默认映射这个端口 |
 | `frpEnabled` | `true` | `frp\frpc.exe` 和 `frp\frpc.ini` 都存在时是否启动 frp |
 
-日志写在 `%LocalAppData%\PCManage\Log`。
+日志写在程序目录下的 `Log\`。配置、令牌和日志都放在程序目录，旧版本放在 `%LocalAppData%\PCManage` 下的配置会在首次启动时迁移过来，然后删除该目录。
 
 ## 接口
 脚本或快捷指令可以在请求头 `X-Access-Token` 中携带令牌。除 GET 外的请求都必须带请求头 `X-PCM-Request: 1`，参数用表单（`application/x-www-form-urlencoded`）传递。返回值统一为 `{"ok": true, "data": ...}` 或 `{"ok": false, "error": "..."}`。

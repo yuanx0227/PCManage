@@ -46,7 +46,7 @@ namespace PCDeviceManage.App
                 bool tokenCreated;
                 try
                 {
-                    settings = AppSettings.LoadOrCreate(AppSettings.DefaultPath, AppSettings.DefaultTokenPath, AppSettings.LegacyTokenPath, out tokenCreated);
+                    settings = AppSettings.LoadOrCreate(AppSettings.DefaultPath, AppSettings.DefaultTokenPath, AppSettings.LegacyDataDirectory, out tokenCreated);
                     if (tokenCreated)
                     {
                         _log.Warn("已生成访问令牌并保存到 " + AppSettings.DefaultTokenPath + "，打开控制台时在登录页输入该令牌。");
@@ -57,6 +57,18 @@ namespace PCDeviceManage.App
                     _log.Error("读取配置失败", ex);
                     MessageBox.Show("读取配置失败：" + ex.Message, "PC控制", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
+                }
+
+                try
+                {
+                    if (AppSettings.DeleteLegacyDirectory(AppSettings.LegacyDataDirectory))
+                    {
+                        _log.Info("已将配置迁移到程序目录，并删除旧目录 " + AppSettings.LegacyDataDirectory);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _log.Warn("删除旧数据目录失败：" + AppSettings.LegacyDataDirectory, ex);
                 }
 
                 Autostart autostart = Autostart.ForCurrentUser(Application.ExecutablePath);

@@ -62,7 +62,7 @@ namespace PCDeviceManage.App
                 _restartFrp,
                 new ToolStripSeparator(),
                 _autostartItem,
-                new ToolStripMenuItem("打开日志目录", null, (s, e) => OpenFolder(System.IO.Path.Combine(AppSettings.DataDirectory, "Log"))),
+                new ToolStripMenuItem("打开日志目录", null, (s, e) => OpenFolder(AppSettings.LogDirectory)),
                 new ToolStripMenuItem("打开配置文件", null, (s, e) => OpenFile(AppSettings.DefaultPath)),
                 new ToolStripSeparator(),
                 new ToolStripMenuItem("退出", null, (s, e) => ExitThread())

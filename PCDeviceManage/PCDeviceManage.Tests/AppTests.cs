@@ -127,18 +127,47 @@ namespace PCDeviceManage.Tests
         {
             using (var dir = new TempDirectory())
             {
-                string legacyToken = dir.File("legacy_access_token");
-                File.WriteAllText(legacyToken, "token-from-file\r\n");
+                string legacy = dir.File("legacy");
+                Directory.CreateDirectory(legacy);
+                File.WriteAllText(Path.Combine(legacy, "access_token"), "token-from-file\r\n");
 
                 bool created;
-                AppSettings settings = AppSettings.LoadOrCreate(dir.File("settings.json"), dir.File("access_token"), legacyToken, out created);
+                AppSettings settings = AppSettings.LoadOrCreate(dir.File("settings.json"), dir.File("access_token"), legacy, out created);
                 Assert.True(!created && settings.AccessToken == "token-from-file", "Expected the P0 token file to be migrated.");
-                Assert.True(!File.Exists(legacyToken), "Expected the legacy token file to be removed.");
                 Assert.Equal("token-from-file", File.ReadAllText(dir.File("access_token")));
 
-                File.WriteAllText(legacyToken, "stale-token");
-                AppSettings again = AppSettings.LoadOrCreate(dir.File("settings.json"), dir.File("access_token"), legacyToken, out created);
+                File.WriteAllText(Path.Combine(legacy, "access_token"), "stale-token");
+                AppSettings again = AppSettings.LoadOrCreate(dir.File("settings.json"), dir.File("access_token"), legacy, out created);
                 Assert.True(again.AccessToken == "token-from-file", "Expected the program-directory token to win over a stale legacy file.");
+            }
+        }
+
+        [Fact]
+        public void SettingsMigrateLegacyDirectoryThenDeleteIt()
+        {
+            using (var dir = new TempDirectory())
+            {
+                string legacy = dir.File("legacy");
+                Directory.CreateDirectory(Path.Combine(legacy, "Log"));
+                File.WriteAllText(Path.Combine(legacy, "Log", "20261027.Log"), "old log");
+                File.WriteAllText(Path.Combine(legacy, "settings.json"), "{ \"webHost\": \"+\", \"webPort\": 9600, \"frpEnabled\": false, \"accessToken\": \"old-token\" }");
+
+                bool created;
+                AppSettings settings = AppSettings.LoadOrCreate(dir.File("app\\settings.json"), dir.File("app\\access_token"), legacy, out created);
+                Assert.True(!created && settings.AccessToken == "old-token", "Expected the legacy token to be migrated.");
+                Assert.True(settings.WebHost == "+" && settings.WebPort == 9600 && !settings.FrpEnabled, "Expected legacy settings to be migrated.");
+                Assert.Contains("9600", File.ReadAllText(dir.File("app\\settings.json")));
+                Assert.Equal("old-token", File.ReadAllText(dir.File("app\\access_token")));
+
+                Assert.True(AppSettings.DeleteLegacyDirectory(legacy), "Expected the legacy directory to be deleted.");
+                Assert.False(Directory.Exists(legacy));
+                Assert.False(AppSettings.DeleteLegacyDirectory(legacy), "Expected a second delete to be a no-op.");
+
+                // 新位置已有配置时，不再读取旧目录。
+                Directory.CreateDirectory(legacy);
+                File.WriteAllText(Path.Combine(legacy, "settings.json"), "{ \"webPort\": 1234 }");
+                AppSettings again = AppSettings.LoadOrCreate(dir.File("app\\settings.json"), dir.File("app\\access_token"), legacy, out created);
+                Assert.Equal(9600, again.WebPort);
             }
         }
 

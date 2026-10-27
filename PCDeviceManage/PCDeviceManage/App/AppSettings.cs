@@ -8,8 +8,9 @@ using System.Text.Json.Serialization;
 namespace PCDeviceManage.App
 {
     /// <summary>
-    /// 用户配置：端口、监听地址、frp 开关保存在 %LocalAppData%\PCManage\settings.json；
-    /// 访问令牌单独保存在程序目录下的 access_token 文件中，方便随程序一起查看和备份。
+    /// 用户配置：端口、监听地址、frp 开关保存在程序目录下的 settings.json，
+    /// 访问令牌单独保存在程序目录下的 access_token，日志写在程序目录下的 Log\。
+    /// 所有数据都和程序放在一起，程序目录需要有写权限。
     /// </summary>
     public sealed class AppSettings
     {
@@ -44,38 +45,41 @@ namespace PCDeviceManage.App
             WriteIndented = true
         };
 
-        public static string DataDirectory =>
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PCManage");
-
-        public static string DefaultPath => Path.Combine(DataDirectory, "settings.json");
+        /// <summary>配置文件：程序目录下的 settings.json。</summary>
+        public static string DefaultPath => Path.Combine(AppContext.BaseDirectory, "settings.json");
 
         /// <summary>访问令牌文件：程序目录下的 access_token。</summary>
         public static string DefaultTokenPath => Path.Combine(AppContext.BaseDirectory, "access_token");
 
-        /// <summary>P0 版本保存访问令牌的位置，迁移到程序目录后删除。</summary>
-        public static string LegacyTokenPath => Path.Combine(DataDirectory, "access_token");
+        /// <summary>日志目录：程序目录下的 Log（与 log4net.config 中的配置一致）。</summary>
+        public static string LogDirectory => Path.Combine(AppContext.BaseDirectory, "Log");
+
+        /// <summary>旧版本存放配置、令牌和日志的目录，迁移到程序目录后整个删除。</summary>
+        public static string LegacyDataDirectory =>
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PCManage");
 
         /// <summary>
-        /// 读取配置和访问令牌。令牌按顺序取自：tokenPath、settings.json 中旧的 accessToken、
-        /// P0 版本的 legacyTokenPath，都没有则生成一个；不是从 tokenPath 读到的令牌会写入 tokenPath。
+        /// 读取配置和访问令牌。程序目录没有 settings.json 时，从 legacyDirectory 中的 settings.json 迁移。
+        /// 令牌按顺序取自：tokenPath、settings.json 中旧的 accessToken、legacyDirectory 中的 access_token，
+        /// 都没有则生成一个；不是从 tokenPath 读到的令牌会写入 tokenPath。
         /// 配置文件存在但无法解析时抛出异常，而不是悄悄生成新令牌覆盖用户配置。
         /// </summary>
-        public static AppSettings LoadOrCreate(string path, string tokenPath, string legacyTokenPath, out bool tokenCreated)
+        public static AppSettings LoadOrCreate(string path, string tokenPath, string legacyDirectory, out bool tokenCreated)
         {
             tokenCreated = false;
             bool dirty = false;
             AppSettings settings;
+            string legacySettingsPath = legacyDirectory == null ? null : Path.Combine(legacyDirectory, "settings.json");
+            string legacyTokenPath = legacyDirectory == null ? null : Path.Combine(legacyDirectory, "access_token");
 
             if (File.Exists(path))
             {
-                try
-                {
-                    settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(path, Encoding.UTF8), JsonOptions) ?? new AppSettings();
-                }
-                catch (JsonException ex)
-                {
-                    throw new InvalidDataException("配置文件格式错误：" + path, ex);
-                }
+                settings = Read(path);
+            }
+            else if (legacySettingsPath != null && File.Exists(legacySettingsPath))
+            {
+                settings = Read(legacySettingsPath);
+                dirty = true;
             }
             else
             {
@@ -114,12 +118,30 @@ namespace PCDeviceManage.App
             {
                 settings.Save(path);
             }
-
-            if (legacyTokenPath != null && File.Exists(legacyTokenPath))
-            {
-                File.Delete(legacyTokenPath);
-            }
             return settings;
+        }
+
+        /// <summary>迁移完成后删除旧版本的数据目录（包括其中的旧日志），返回是否删除了。</summary>
+        public static bool DeleteLegacyDirectory(string legacyDirectory)
+        {
+            if (legacyDirectory == null || !Directory.Exists(legacyDirectory))
+            {
+                return false;
+            }
+            Directory.Delete(legacyDirectory, true);
+            return true;
+        }
+
+        private static AppSettings Read(string path)
+        {
+            try
+            {
+                return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(path, Encoding.UTF8), JsonOptions) ?? new AppSettings();
+            }
+            catch (JsonException ex)
+            {
+                throw new InvalidDataException("配置文件格式错误：" + path, ex);
+            }
         }
 
         public void Save(string path)
