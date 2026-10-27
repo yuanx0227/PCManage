@@ -59,7 +59,7 @@
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="Windows">
-      <HintPath>..\..\..\..\..\Windows Kits\10\UnionMetadata\10.0.19041.0\Windows.winmd</HintPath>
+      <HintPath>..\PCDeviceManage\lib\Windows.winmd</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
