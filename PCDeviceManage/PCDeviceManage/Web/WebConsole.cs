@@ -4,8 +4,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Globalization;
 using System.IO;
@@ -15,10 +14,10 @@ using System.Threading.Tasks;
 namespace PCDeviceManage
 {
     /// <summary>
-    /// 本机 Web 控制台（Kestrel + Minimal API）。只负责路由、鉴权、防 CSRF 和 JSON 序列化，具体操作交给各个服务。
-    /// 接口统一返回 { "ok": true, "data": ... } 或 { "ok": false, "error": "..." }。
+    /// 本机 Web 控制台的中间件和端点（Minimal API）。只负责路由、鉴权、防 CSRF 和 JSON 序列化，
+    /// 具体操作交给容器中的各个服务。接口统一返回 { "ok": true, "data": ... } 或 { "ok": false, "error": "..." }。
     /// </summary>
-    public sealed class WebServer : IDisposable
+    public sealed class WebConsole
     {
         /// <summary>标记本服务映射的端点；路由系统生成的 405 等端点没有它，不做鉴权检查。</summary>
         private sealed class ApiEndpoint
@@ -36,99 +35,32 @@ namespace PCDeviceManage
             public int StatusCode { get; }
         }
 
+        private static readonly ILog _log = LogManager.GetLogger(typeof(WebConsole));
+
         private readonly MonitorRegistry _monitorRegistry;
         private readonly AudioService _audioService;
         private readonly PowerService _powerService;
         private readonly ShutdownScheduler _shutdownScheduler;
         private readonly TokenAuthenticator _authenticator;
-        private readonly int _port;
-        private readonly string _host;
-        private readonly ILog _log;
-        private WebApplication _app;
 
-        public WebServer(
-            MonitorRegistry monitorRegistry,
-            AudioService audioService,
-            PowerService powerService,
-            ShutdownScheduler shutdownScheduler,
-            TokenAuthenticator authenticator,
-            int port,
-            string host,
-            ILog log)
+        private WebConsole(IServiceProvider services)
         {
-            _monitorRegistry = monitorRegistry ?? throw new ArgumentNullException(nameof(monitorRegistry));
-            _audioService = audioService;
-            _powerService = powerService;
-            _shutdownScheduler = shutdownScheduler ?? throw new ArgumentNullException(nameof(shutdownScheduler));
-            _authenticator = authenticator ?? throw new ArgumentNullException(nameof(authenticator));
-            _port = port;
-            _host = string.IsNullOrWhiteSpace(host) ? "127.0.0.1" : host.Trim();
-            _log = log ?? LogManager.GetLogger(typeof(WebServer));
+            _monitorRegistry = services.GetRequiredService<MonitorRegistry>();
+            _audioService = services.GetRequiredService<AudioService>();
+            _powerService = services.GetRequiredService<PowerService>();
+            _shutdownScheduler = services.GetRequiredService<ShutdownScheduler>();
+            _authenticator = services.GetRequiredService<TokenAuthenticator>();
         }
 
-        public bool Start()
+        /// <summary>给主机加上控制台的中间件和端点。</summary>
+        public static void Configure(WebApplication app)
         {
-            if (_app != null)
-            {
-                return true;
-            }
-
-            try
-            {
-                WebApplication app = Build();
-                app.StartAsync().GetAwaiter().GetResult();
-                _app = app;
-                _log.Info("Web server started: http://" + _host + ":" + _port + "/");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _log.Error("Web server start failed.", ex);
-                return false;
-            }
-        }
-
-        public void Stop()
-        {
-            WebApplication app = _app;
-            _app = null;
-            if (app == null)
-            {
-                return;
-            }
-
-            try
-            {
-                app.StopAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
-            }
-            finally
-            {
-                app.DisposeAsync().AsTask().GetAwaiter().GetResult();
-            }
-        }
-
-        private WebApplication Build()
-        {
-            WebApplicationBuilder builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions
-            {
-                ContentRootPath = AppContext.BaseDirectory
-            });
-            // 应用日志走 log4net，不启用 ASP.NET Core 自己的日志输出。
-            builder.Logging.ClearProviders();
-            builder.WebHost.ConfigureKestrel(options =>
-            {
-                options.AddServerHeader = false;
-                options.Limits.MaxRequestBodySize = 64 * 1024;
-                options.Listen(ResolveAddress(_host), _port);
-            });
-
-            WebApplication app = builder.Build();
-            app.Use(HandleErrors);
+            var console = new WebConsole(app.Services);
+            app.Use(console.HandleErrors);
             app.UseStatusCodePages(WriteStatusCodePage);
             app.UseRouting();
-            app.Use(Guard);
-            MapEndpoints(app);
-            return app;
+            app.Use(console.Guard);
+            console.MapEndpoints(app);
         }
 
         /// <summary>监听地址：+、* 或 0.0.0.0 表示所有地址（IPv4 和 IPv6），localhost 表示回环地址。</summary>
@@ -426,7 +358,7 @@ namespace PCDeviceManage
                 }
             }
 #endif
-            using (Stream stream = typeof(WebServer).Assembly.GetManifestResourceStream(resourceName))
+            using (Stream stream = typeof(WebConsole).Assembly.GetManifestResourceStream(resourceName))
             {
                 if (stream == null)
                 {
@@ -440,9 +372,5 @@ namespace PCDeviceManage
             }
         }
 
-        public void Dispose()
-        {
-            Stop();
-        }
     }
 }

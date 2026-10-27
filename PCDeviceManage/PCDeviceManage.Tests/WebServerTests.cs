@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using static PCDeviceManage.Tests.TestSupport;
 
@@ -15,11 +16,46 @@ namespace PCDeviceManage.Tests
         [Fact]
         public void WebHostSettingMapsToListenAddress()
         {
-            Assert.Equal(IPAddress.IPv6Any, WebServer.ResolveAddress("+"));
-            Assert.Equal(IPAddress.IPv6Any, WebServer.ResolveAddress("0.0.0.0"));
-            Assert.Equal(IPAddress.Loopback, WebServer.ResolveAddress("localhost"));
-            Assert.Equal(IPAddress.Parse("192.168.1.5"), WebServer.ResolveAddress("192.168.1.5"));
-            Assert.Throws<ArgumentException>(() => WebServer.ResolveAddress("my-pc"));
+            Assert.Equal(IPAddress.IPv6Any, WebConsole.ResolveAddress("+"));
+            Assert.Equal(IPAddress.IPv6Any, WebConsole.ResolveAddress("0.0.0.0"));
+            Assert.Equal(IPAddress.Loopback, WebConsole.ResolveAddress("localhost"));
+            Assert.Equal(IPAddress.Parse("192.168.1.5"), WebConsole.ResolveAddress("192.168.1.5"));
+            Assert.Throws<ArgumentException>(() => WebConsole.ResolveAddress("my-pc"));
+        }
+
+        [Fact]
+        public void HostRunsLifetimeHooksEvenWhenPortIsBusy()
+        {
+            var busy = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
+            busy.Start();
+            try
+            {
+                int port = ((IPEndPoint)busy.LocalEndpoint).Port;
+                int started = 0;
+                int stopped = 0;
+                var scheduler = new ShutdownScheduler(() => { });
+                var app = AppHost.Build("127.0.0.1", port, services =>
+                {
+                    services.AddSingleton(CreateRegistry());
+                    services.AddSingleton(new AudioService());
+                    services.AddSingleton(new PowerService());
+                    services.AddSingleton(scheduler);
+                    services.AddSingleton(new TokenAuthenticator("token"));
+                    services.AddLifetimeHook(provider => started++, provider => stopped++);
+                });
+
+                Assert.ThrowsAny<Exception>(() => app.StartAsync().GetAwaiter().GetResult());
+                Assert.Equal(1, started);
+
+                app.StopAsync().GetAwaiter().GetResult();
+                app.DisposeAsync().AsTask().GetAwaiter().GetResult();
+                scheduler.Dispose();
+                Assert.Equal(1, stopped);
+            }
+            finally
+            {
+                busy.Stop();
+            }
         }
 
         [Fact]

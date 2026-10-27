@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace PCDeviceManage.Tests
@@ -109,7 +110,7 @@ namespace PCDeviceManage.Tests
         {
             public const string Token = "integration-token";
 
-            private readonly WebServer _server;
+            private readonly Microsoft.AspNetCore.Builder.WebApplication _app;
             private readonly MonitorRegistry _registry;
             private readonly HttpClient _client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, CookieContainer = new CookieContainer() });
             private readonly int _port;
@@ -129,16 +130,16 @@ namespace PCDeviceManage.Tests
                 _port = ((IPEndPoint)listener.LocalEndpoint).Port;
                 listener.Stop();
 
-                _server = new WebServer(
-                    _registry,
-                    new AudioService(),
-                    new PowerService(),
-                    Scheduler,
-                    new TokenAuthenticator(Token),
-                    _port,
-                    "127.0.0.1",
-                    log4net.LogManager.GetLogger("Tests"));
-                Assert.True(_server.Start(), "Expected test web server to start.");
+                // 与正式程序使用同一个主机构建方法，只是服务换成测试替身；以实例注册的服务不归容器释放。
+                _app = AppHost.Build("127.0.0.1", _port, services =>
+                {
+                    services.AddSingleton(_registry);
+                    services.AddSingleton(new AudioService());
+                    services.AddSingleton(new PowerService());
+                    services.AddSingleton(Scheduler);
+                    services.AddSingleton(new TokenAuthenticator(Token));
+                });
+                _app.StartAsync().GetAwaiter().GetResult();
             }
 
             public TestResponse Send(string method, string path, string form = null, IDictionary<string, string> headers = null, bool csrfHeader = true)
@@ -176,7 +177,8 @@ namespace PCDeviceManage.Tests
             public void Dispose()
             {
                 _client.Dispose();
-                _server.Dispose();
+                _app.StopAsync().GetAwaiter().GetResult();
+                _app.DisposeAsync().AsTask().GetAwaiter().GetResult();
                 _registry.Dispose();
                 Scheduler.Dispose();
             }
