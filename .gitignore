@@ -7,8 +7,9 @@
 [Bb]in/
 [Oo]bj/
 
-# NuGet packages (restored from packages.config)
+# Old packages.config restore folder (no longer used) and publish.ps1 output
 packages/
+publish/
 
 # Runtime logs
 *.log

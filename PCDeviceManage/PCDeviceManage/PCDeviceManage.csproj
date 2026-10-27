@@ -32,13 +32,11 @@
     <EmbeddedResource Include="Web\wwwroot\login.html" LogicalName="PCDeviceManage.wwwroot.login.html" />
   </ItemGroup>
 
+  <!-- 这些文件放在 exe 旁边，单文件发布时不打包进 exe（frpc.exe 否则会被当成原生库打包）。
+       frpc.ini 和 frpc.exe 不入库，存在时才会被复制。 -->
   <ItemGroup>
-    <None Update="log4net.config" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="frp\frpc.example.ini" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="frp\LICENSE" CopyToOutputDirectory="PreserveNewest" />
-    <!-- frpc.ini 和 frpc.exe 不入库，存在时才复制到输出目录。 -->
-    <None Update="frp\frpc.ini" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="frp\frpc.exe" Condition="Exists('frp\frpc.exe')" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="log4net.config;frp\frpc.example.ini;frp\LICENSE;frp\frpc.ini;frp\frpc.exe"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
 </Project>

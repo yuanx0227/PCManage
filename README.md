@@ -51,17 +51,24 @@ frpc 由程序直接作为子进程启动：输出写入日志，意外退出后
 # 开发
 
 ## 开发环境
-  .NET Framework 4.6
+- .NET 8 SDK 或更高版本，目标框架为 `net8.0-windows10.0.19041.0`，运行需要 Windows 10 1809 及以上。
+- 主要依赖：ASP.NET Core（Kestrel，Web 控制台）、WinForms（托盘）、NAudio.Wasapi（音量）、System.Management（WMI 亮度）、log4net。
+- .NET 8 的官方支持在 2026-11-10 结束。升级到 .NET 10 时，把 `PCDeviceManage`、`PCDeviceManage.Tests`、`FakeFrpc` 三个项目的 `TargetFramework` 中的 `net8.0` 改成 `net10.0`，再安装 .NET 10 SDK 即可。
 
-## 测试
-测试项目 `PCDeviceManage.Tests` 使用 xUnit（net462），可以在 Visual Studio 的测试资源管理器中运行，或者在命令行构建后用 vstest 运行（测试项目为 x86）：
-
+## 构建与测试
 ```
-msbuild PCDeviceManage\PCDeviceManage.sln -restore -p:Configuration=Debug
-vstest.console PCDeviceManage\PCDeviceManage.Tests\bin\Debug\net462\PCDeviceManage.Tests.dll /Platform:x86
+dotnet build PCDeviceManage\PCDeviceManage.sln
+dotnet test PCDeviceManage\PCDeviceManage.sln
 ```
 
-测试不会真的锁屏、关机或修改开机启动项：关机动作被替换为计数，开机自启只读写 `HKCU\Software\PCManageTests` 下的临时键。
+测试不会真的锁屏、关机或修改开机启动项：关机动作被替换为计数，开机自启只读写 `HKCU\Software\PCManageTests` 下的临时键。`HardwareSmokeTests` 会在本机真实硬件上只读地枚举显示器、读取音量。`FakeFrpc` 项目是测试用的假 frpc。
+
+## 发布
+```
+./publish.ps1
+```
+
+默认发布为自包含的 win-x64 单文件（约 90 MB），目标机器不需要安装 .NET；加 `-FrameworkDependent` 则约 27 MB，但目标机器需要安装 .NET 8 桌面运行时和 ASP.NET Core 运行时。输出在 `publish\`，`log4net.config` 和 `frp\` 目录放在 exe 旁边。
 
 ## 相关项目
    - <a href="https://github.com/emoacht/Monitorian">Monitorian</a>:调节显示器亮度的Windows桌面工具
