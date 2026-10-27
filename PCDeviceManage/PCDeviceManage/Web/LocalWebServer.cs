@@ -14,7 +14,7 @@ namespace PCDeviceManage
     public sealed class LocalWebServer : IDisposable
     {
         private readonly MonitorRegistry _monitorRegistry;
-        private readonly AudioManage _audioManage;
+        private readonly AudioService _audioService;
         private readonly WindowsManage _windowsManage;
         private readonly TokenAuthenticator _authenticator;
         private readonly int _port;
@@ -43,7 +43,7 @@ namespace PCDeviceManage
 
         public LocalWebServer(
             MonitorRegistry monitorRegistry,
-            AudioManage audioManage,
+            AudioService audioService,
             WindowsManage windowsManage,
             TokenAuthenticator authenticator,
             int port,
@@ -51,7 +51,7 @@ namespace PCDeviceManage
             ILog log)
         {
             _monitorRegistry = monitorRegistry ?? throw new ArgumentNullException(nameof(monitorRegistry));
-            _audioManage = audioManage;
+            _audioService = audioService;
             _windowsManage = windowsManage;
             _authenticator = authenticator ?? throw new ArgumentNullException(nameof(authenticator));
             _port = port;
@@ -206,7 +206,7 @@ namespace PCDeviceManage
                         WriteJson(context.Response, _monitorRegistry.GetMonitors(false));
                         break;
                     case "/home/getvolume":
-                        WriteText(context.Response, _audioManage.GetVolume().ToString());
+                        WriteText(context.Response, _audioService.GetVolume().ToString());
                         break;
                     case "/home/setvolume":
                         WriteText(context.Response, SetVolume(ReadParameters(context.Request)).ToString());
@@ -414,7 +414,8 @@ namespace PCDeviceManage
             {
                 volume = 0;
             }
-            return _audioManage.SetAudioVolume(volume, string.Empty);
+            _audioService.SetVolume(volume);
+            return true;
         }
 
         private string LockWindows(HttpListenerRequest request)

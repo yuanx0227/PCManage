@@ -372,7 +372,7 @@ namespace PCDeviceManage.Tests
 
                 _server = new LocalWebServer(
                     _registry,
-                    new AudioManage(),
+                    new AudioService(),
                     new WindowsManage(),
                     new TokenAuthenticator(Token),
                     _port,

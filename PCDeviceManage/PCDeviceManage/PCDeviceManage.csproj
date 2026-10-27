@@ -92,7 +92,7 @@
     <Compile Include="Form1.designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
-    <Compile Include="Manage\AudioManage.cs" />
+    <Compile Include="Manage\AudioService.cs" />
     <Compile Include="Manage\MonitorDevices.cs" />
     <Compile Include="Manage\MonitorRegistry.cs" />
     <Compile Include="Manage\SystemMonitorEnumerator.cs" />

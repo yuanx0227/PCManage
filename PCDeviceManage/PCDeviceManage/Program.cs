@@ -95,7 +95,7 @@ namespace PCDeviceManage
                     _monitorRegistry.Start();
                 }
 
-                _webServer = new LocalWebServer(_monitorRegistry, new AudioManage(), new WindowsManage(), CreateAuthenticator(), port, host, _log);
+                _webServer = new LocalWebServer(_monitorRegistry, new AudioService(), new WindowsManage(), CreateAuthenticator(), port, host, _log);
                 return _webServer.Start();
             }
             catch (Exception ex)
