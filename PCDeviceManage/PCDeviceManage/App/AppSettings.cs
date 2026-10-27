@@ -8,8 +8,8 @@ using System.Text.Json.Serialization;
 namespace PCDeviceManage.App
 {
     /// <summary>
-    /// 用户配置，保存在 %LocalAppData%\PCManage\settings.json。
-    /// 程序目录可能没有写权限，访问令牌也不应该和程序放在一起，所以不再使用 exe.config。
+    /// 用户配置：端口、监听地址、frp 开关保存在 %LocalAppData%\PCManage\settings.json；
+    /// 访问令牌单独保存在程序目录下的 access_token 文件中，方便随程序一起查看和备份。
     /// </summary>
     public sealed class AppSettings
     {
@@ -22,8 +22,14 @@ namespace PCDeviceManage.App
         [JsonPropertyName("webPort")]
         public int WebPort { get; set; } = DefaultWebPort;
 
-        [JsonPropertyName("accessToken")]
+        /// <summary>访问令牌，来自程序目录下的 access_token 文件，不写入 settings.json。</summary>
+        [JsonIgnore]
         public string AccessToken { get; set; }
+
+        /// <summary>旧版本写在 settings.json 里的令牌，只用于迁移，迁移后从文件中删除。</summary>
+        [JsonPropertyName("accessToken")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string LegacyAccessToken { get; set; }
 
         /// <summary>frp\frpc.exe 和 frp\frpc.ini 都存在时是否启动 frp。</summary>
         [JsonPropertyName("frpEnabled")]
@@ -43,14 +49,18 @@ namespace PCDeviceManage.App
 
         public static string DefaultPath => Path.Combine(DataDirectory, "settings.json");
 
-        /// <summary>P0 版本保存访问令牌的位置，首次加载时迁移进 settings.json 后删除。</summary>
+        /// <summary>访问令牌文件：程序目录下的 access_token。</summary>
+        public static string DefaultTokenPath => Path.Combine(AppContext.BaseDirectory, "access_token");
+
+        /// <summary>P0 版本保存访问令牌的位置，迁移到程序目录后删除。</summary>
         public static string LegacyTokenPath => Path.Combine(DataDirectory, "access_token");
 
         /// <summary>
-        /// 读取配置；文件不存在时从 P0 版本的 access_token 文件迁移令牌，没有令牌则生成一个。
-        /// 文件存在但无法解析时抛出异常，而不是悄悄生成新令牌覆盖用户配置。
+        /// 读取配置和访问令牌。令牌按顺序取自：tokenPath、settings.json 中旧的 accessToken、
+        /// P0 版本的 legacyTokenPath，都没有则生成一个；不是从 tokenPath 读到的令牌会写入 tokenPath。
+        /// 配置文件存在但无法解析时抛出异常，而不是悄悄生成新令牌覆盖用户配置。
         /// </summary>
-        public static AppSettings LoadOrCreate(string path, string legacyTokenPath, out bool tokenCreated)
+        public static AppSettings LoadOrCreate(string path, string tokenPath, string legacyTokenPath, out bool tokenCreated)
         {
             tokenCreated = false;
             bool dirty = false;
@@ -70,7 +80,6 @@ namespace PCDeviceManage.App
             else
             {
                 settings = new AppSettings();
-                settings.MigrateLegacyToken(legacyTokenPath);
                 dirty = true;
             }
 
@@ -84,10 +93,20 @@ namespace PCDeviceManage.App
                 settings.WebHost = DefaultWebHost;
                 dirty = true;
             }
-            if (string.IsNullOrWhiteSpace(settings.AccessToken))
+            settings.AccessToken = ReadToken(tokenPath);
+            if (settings.AccessToken == null)
             {
-                settings.AccessToken = GenerateToken();
-                tokenCreated = true;
+                settings.AccessToken = Trimmed(settings.LegacyAccessToken) ?? ReadToken(legacyTokenPath);
+                if (settings.AccessToken == null)
+                {
+                    settings.AccessToken = GenerateToken();
+                    tokenCreated = true;
+                }
+                WriteToken(tokenPath, settings.AccessToken);
+            }
+            if (settings.LegacyAccessToken != null)
+            {
+                settings.LegacyAccessToken = null;
                 dirty = true;
             }
 
@@ -128,12 +147,20 @@ namespace PCDeviceManage.App
             return Convert.ToBase64String(buffer).TrimEnd('=').Replace('+', '-').Replace('/', '_');
         }
 
-        private void MigrateLegacyToken(string legacyTokenPath)
+        private static string ReadToken(string path)
         {
-            if (legacyTokenPath != null && File.Exists(legacyTokenPath))
-            {
-                AccessToken = File.ReadAllText(legacyTokenPath, Encoding.UTF8).Trim();
-            }
+            return path != null && File.Exists(path) ? Trimmed(File.ReadAllText(path, Encoding.UTF8)) : null;
+        }
+
+        private static void WriteToken(string path, string token)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            File.WriteAllText(path, token, new UTF8Encoding(false));
+        }
+
+        private static string Trimmed(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
     }
 }

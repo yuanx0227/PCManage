@@ -46,10 +46,10 @@ namespace PCDeviceManage.App
                 bool tokenCreated;
                 try
                 {
-                    settings = AppSettings.LoadOrCreate(AppSettings.DefaultPath, AppSettings.LegacyTokenPath, out tokenCreated);
+                    settings = AppSettings.LoadOrCreate(AppSettings.DefaultPath, AppSettings.DefaultTokenPath, AppSettings.LegacyTokenPath, out tokenCreated);
                     if (tokenCreated)
                     {
-                        _log.Warn("已生成访问令牌并保存到 " + AppSettings.DefaultPath + "，打开控制台时在登录页输入该令牌。");
+                        _log.Warn("已生成访问令牌并保存到 " + AppSettings.DefaultTokenPath + "，打开控制台时在登录页输入该令牌。");
                     }
                 }
                 catch (Exception ex)

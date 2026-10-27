@@ -83,12 +83,42 @@ namespace PCDeviceManage.Tests
             using (var dir = new TempDirectory())
             {
                 bool created;
-                AppSettings first = AppSettings.LoadOrCreate(dir.File("settings.json"), null, out created);
+                AppSettings first = AppSettings.LoadOrCreate(dir.File("settings.json"), dir.File("app\\access_token"), null, out created);
                 Assert.True(created && first.AccessToken.Length >= 32, "Expected a random token to be generated.");
                 Assert.True(first.WebPort == 9527 && first.WebHost == "127.0.0.1" && first.FrpEnabled, "Expected defaults.");
+                Assert.Equal(first.AccessToken, File.ReadAllText(dir.File("app\\access_token")));
+                Assert.DoesNotContain("accessToken", File.ReadAllText(dir.File("settings.json")));
 
-                AppSettings second = AppSettings.LoadOrCreate(dir.File("settings.json"), null, out created);
+                AppSettings second = AppSettings.LoadOrCreate(dir.File("settings.json"), dir.File("app\\access_token"), null, out created);
                 Assert.True(!created && second.AccessToken == first.AccessToken, "Expected the saved token to be reused.");
+            }
+        }
+
+        [Fact]
+        public void SettingsTokenFileCanBeEdited()
+        {
+            using (var dir = new TempDirectory())
+            {
+                File.WriteAllText(dir.File("access_token"), "  my-own-token\r\n");
+                bool created;
+                AppSettings settings = AppSettings.LoadOrCreate(dir.File("settings.json"), dir.File("access_token"), null, out created);
+                Assert.True(!created && settings.AccessToken == "my-own-token", "Expected the token file to be used as-is (trimmed).");
+            }
+        }
+
+        [Fact]
+        public void SettingsMigrateTokenFromSettingsJson()
+        {
+            using (var dir = new TempDirectory())
+            {
+                File.WriteAllText(dir.File("settings.json"), "{ \"webPort\": 9600, \"accessToken\": \"token-from-settings\" }");
+                bool created;
+                AppSettings settings = AppSettings.LoadOrCreate(dir.File("settings.json"), dir.File("access_token"), null, out created);
+                Assert.True(!created && settings.AccessToken == "token-from-settings", "Expected the P1/P2 token to be migrated.");
+                Assert.Equal("token-from-settings", File.ReadAllText(dir.File("access_token")));
+                string json = File.ReadAllText(dir.File("settings.json"));
+                Assert.DoesNotContain("accessToken", json);
+                Assert.Contains("9600", json);
             }
         }
 
@@ -97,17 +127,18 @@ namespace PCDeviceManage.Tests
         {
             using (var dir = new TempDirectory())
             {
-                string legacyToken = dir.File("access_token");
+                string legacyToken = dir.File("legacy_access_token");
                 File.WriteAllText(legacyToken, "token-from-file\r\n");
 
                 bool created;
-                AppSettings settings = AppSettings.LoadOrCreate(dir.File("settings.json"), legacyToken, out created);
+                AppSettings settings = AppSettings.LoadOrCreate(dir.File("settings.json"), dir.File("access_token"), legacyToken, out created);
                 Assert.True(!created && settings.AccessToken == "token-from-file", "Expected the P0 token file to be migrated.");
                 Assert.True(!File.Exists(legacyToken), "Expected the legacy token file to be removed.");
+                Assert.Equal("token-from-file", File.ReadAllText(dir.File("access_token")));
 
                 File.WriteAllText(legacyToken, "stale-token");
-                AppSettings again = AppSettings.LoadOrCreate(dir.File("settings.json"), legacyToken, out created);
-                Assert.True(again.AccessToken == "token-from-file", "Expected an existing settings file to win over a stale token file.");
+                AppSettings again = AppSettings.LoadOrCreate(dir.File("settings.json"), dir.File("access_token"), legacyToken, out created);
+                Assert.True(again.AccessToken == "token-from-file", "Expected the program-directory token to win over a stale legacy file.");
             }
         }
 
@@ -116,9 +147,10 @@ namespace PCDeviceManage.Tests
         {
             using (var dir = new TempDirectory())
             {
-                File.WriteAllText(dir.File("settings.json"), "{ \"webPort\": 70000, \"webHost\": \" \", \"accessToken\": \"keep-me\", \"frpEnabled\": false }");
+                File.WriteAllText(dir.File("settings.json"), "{ \"webPort\": 70000, \"webHost\": \" \", \"frpEnabled\": false }");
+                File.WriteAllText(dir.File("access_token"), "keep-me");
                 bool created;
-                AppSettings settings = AppSettings.LoadOrCreate(dir.File("settings.json"), null, out created);
+                AppSettings settings = AppSettings.LoadOrCreate(dir.File("settings.json"), dir.File("access_token"), null, out created);
                 Assert.True(settings.WebPort == 9527 && settings.WebHost == "127.0.0.1", "Expected invalid port/host to fall back to defaults.");
                 Assert.True(!created && settings.AccessToken == "keep-me" && !settings.FrpEnabled, "Expected valid values to be kept.");
                 Assert.True(File.ReadAllText(dir.File("settings.json")).Contains("9527"), "Expected the corrected file to be saved.");
@@ -132,7 +164,7 @@ namespace PCDeviceManage.Tests
             {
                 File.WriteAllText(dir.File("settings.json"), "{ not json");
                 bool created;
-                Assert.Throws<InvalidDataException>(() => AppSettings.LoadOrCreate(dir.File("settings.json"), null, out created));
+                Assert.Throws<InvalidDataException>(() => AppSettings.LoadOrCreate(dir.File("settings.json"), dir.File("access_token"), null, out created));
                 Assert.True(File.ReadAllText(dir.File("settings.json")) == "{ not json", "Expected the corrupt file to be left untouched.");
             }
         }
