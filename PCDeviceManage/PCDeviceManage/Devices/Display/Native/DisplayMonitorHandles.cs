@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using System.Windows;
+using System.Drawing;
 
 namespace PCDeviceManage
 {
@@ -54,12 +54,12 @@ namespace PCDeviceManage
 			public int right;
 			public int bottom;
 
-			public static implicit operator Rect(RECT rect)
+			public static implicit operator Rectangle(RECT rect)
 			{
 				if ((rect.right < rect.left) || (rect.bottom < rect.top))
-					return Rect.Empty;
+					return Rectangle.Empty;
 
-				return new Rect(
+				return new Rectangle(
 					rect.left,
 					rect.top,
 					rect.right - rect.left,
@@ -72,12 +72,12 @@ namespace PCDeviceManage
 		public class HandleItem
 		{
 			public int DisplayIndex { get; }
-			public Rect MonitorRect { get; }
+			public Rectangle MonitorRect { get; }
 			public IntPtr MonitorHandle { get; }
 
 			public HandleItem(
 				int displayIndex,
-				Rect monitorRect,
+				Rectangle monitorRect,
 				IntPtr monitorHandle)
 			{
 				this.DisplayIndex = displayIndex;

@@ -1,6 +1,5 @@
 using Newtonsoft.Json;
 using System;
-using System.Collections.Specialized;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -38,10 +37,10 @@ namespace PCDeviceManage
         public static string LegacyTokenPath => Path.Combine(DataDirectory, "access_token");
 
         /// <summary>
-        /// 读取配置；文件不存在时从旧版 App.config 和 access_token 迁移，没有令牌则生成一个。
+        /// 读取配置；文件不存在时从 P0 版本的 access_token 文件迁移令牌，没有令牌则生成一个。
         /// 文件存在但无法解析时抛出异常，而不是悄悄生成新令牌覆盖用户配置。
         /// </summary>
-        public static AppSettings LoadOrCreate(string path, NameValueCollection legacyAppSettings, string legacyTokenPath, out bool tokenCreated)
+        public static AppSettings LoadOrCreate(string path, string legacyTokenPath, out bool tokenCreated)
         {
             tokenCreated = false;
             bool dirty = false;
@@ -61,7 +60,7 @@ namespace PCDeviceManage
             else
             {
                 settings = new AppSettings();
-                settings.MigrateLegacy(legacyAppSettings, legacyTokenPath);
+                settings.MigrateLegacyToken(legacyTokenPath);
                 dirty = true;
             }
 
@@ -119,26 +118,9 @@ namespace PCDeviceManage
             return Convert.ToBase64String(buffer).TrimEnd('=').Replace('+', '-').Replace('/', '_');
         }
 
-        private void MigrateLegacy(NameValueCollection legacyAppSettings, string legacyTokenPath)
+        private void MigrateLegacyToken(string legacyTokenPath)
         {
-            if (legacyAppSettings != null)
-            {
-                int port;
-                if (int.TryParse(legacyAppSettings["WebPort"] ?? legacyAppSettings["Port"], out port))
-                {
-                    WebPort = port;
-                }
-                if (!string.IsNullOrWhiteSpace(legacyAppSettings["WebHost"]))
-                {
-                    WebHost = legacyAppSettings["WebHost"].Trim();
-                }
-                if (!string.IsNullOrWhiteSpace(legacyAppSettings["AccessToken"]))
-                {
-                    AccessToken = legacyAppSettings["AccessToken"].Trim();
-                }
-            }
-
-            if (string.IsNullOrWhiteSpace(AccessToken) && legacyTokenPath != null && File.Exists(legacyTokenPath))
+            if (legacyTokenPath != null && File.Exists(legacyTokenPath))
             {
                 AccessToken = File.ReadAllText(legacyTokenPath, Encoding.UTF8).Trim();
             }

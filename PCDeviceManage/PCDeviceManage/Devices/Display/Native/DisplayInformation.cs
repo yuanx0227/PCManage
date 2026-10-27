@@ -7,7 +7,7 @@ using Windows.Devices.Display;
 using Windows.Devices.Enumeration;
 using Windows.Foundation;
 
-namespace Monitorian.Supplement
+namespace PCDeviceManage
 {
 	/// <summary>
 	/// A wrapper class of <see cref="Windows.Devices.Display.DisplayMonitor"/>

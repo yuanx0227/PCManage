@@ -17,14 +17,14 @@ namespace PCDeviceManage.Tests
         {
             using (var server = new TestServer())
             {
-                HttpWebResponse page = server.Send("GET", "/");
+                TestResponse page = server.Send("GET", "/");
                 Assert.True(page.StatusCode == HttpStatusCode.Redirect && page.Headers["Location"].EndsWith("/login"), "Expected anonymous page request to redirect to /login.");
                 Assert.True(server.Send("GET", "/login").StatusCode == HttpStatusCode.OK, "Expected login page to be public.");
                 Assert.True(server.Send("GET", "/api/power/schedule").StatusCode == HttpStatusCode.Unauthorized, "Expected anonymous API request to be rejected.");
                 Assert.True(server.Send("POST", "/api/login", "token=wrong").StatusCode == HttpStatusCode.Unauthorized, "Expected wrong token to be rejected.");
                 Assert.True(server.Send("GET", "/api/login").StatusCode == HttpStatusCode.MethodNotAllowed, "Expected GET login to be rejected.");
 
-                HttpWebResponse login = server.Send("POST", "/api/login", "token=" + Uri.EscapeDataString(TestServer.Token));
+                TestResponse login = server.Send("POST", "/api/login", "token=" + Uri.EscapeDataString(TestServer.Token));
                 string setCookie = login.Headers["Set-Cookie"] ?? string.Empty;
                 Assert.True(login.StatusCode == HttpStatusCode.OK, "Expected correct token to log in.");
                 Assert.True(setCookie.Contains("HttpOnly") && setCookie.Contains("SameSite=Strict"), "Expected a hardened session cookie.");
@@ -84,7 +84,7 @@ namespace PCDeviceManage.Tests
                 Assert.True(server.Send("GET", "/home").StatusCode == HttpStatusCode.OK, "Expected the old /home address to still open the console.");
                 Assert.True(server.Send("GET", "/api/nothing").StatusCode == HttpStatusCode.NotFound && server.LastBody.Contains("\"ok\":false"), "Expected a JSON 404 for unknown APIs.");
 
-                HttpWebResponse wrongMethod = server.Send("PUT", "/api/power/schedule");
+                TestResponse wrongMethod = server.Send("PUT", "/api/power/schedule");
                 Assert.True(wrongMethod.StatusCode == HttpStatusCode.MethodNotAllowed, "Expected 405 for an unmapped method.");
                 Assert.True(wrongMethod.Headers["Allow"].Contains("DELETE") && wrongMethod.Headers["Allow"].Contains("GET"), "Expected the Allow header to list mapped methods.");
             }

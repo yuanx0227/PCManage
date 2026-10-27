@@ -1,207 +1,40 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{BA23375B-7850-4D36-B69A-E3A4E8A83077}</ProjectGuid>
     <OutputType>WinExe</OutputType>
+    <!-- Windows 10 SDK 版本号让 WinRT API（Windows.Devices.Display）直接可用；DisplayMonitor 需要 1803 及以上。 -->
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
     <RootNamespace>PCDeviceManage</RootNamespace>
     <AssemblyName>PCDeviceManage</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <Deterministic>true</Deterministic>
-    <TargetFrameworkProfile />
-    <PublishUrl>publish\</PublishUrl>
-    <Install>true</Install>
-    <InstallFrom>Disk</InstallFrom>
-    <UpdateEnabled>false</UpdateEnabled>
-    <UpdateMode>Foreground</UpdateMode>
-    <UpdateInterval>7</UpdateInterval>
-    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
-    <UpdatePeriodically>false</UpdatePeriodically>
-    <UpdateRequired>false</UpdateRequired>
-    <MapFileExtensions>true</MapFileExtensions>
-    <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
-    <UseApplicationTrust>false</UseApplicationTrust>
-    <BootstrapperEnabled>true</BootstrapperEnabled>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>x86</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup>
-    <StartupObject />
     <ApplicationIcon>ico\app.ico</ApplicationIcon>
+    <Product>PCDeviceManage</Product>
+    <Copyright>Copyright © 2022</Copyright>
+    <Version>2.0.0</Version>
   </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="log4net, Version=2.0.14.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
-      <HintPath>..\packages\log4net.2.0.14\lib\net40\log4net.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Configuration" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Management" />
-    <Reference Include="System.Numerics" />
-    <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.ValueTuple.4.5.0\lib\portable-net40+sl4+win8+wp8\System.ValueTuple.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
-    <Reference Include="WindowsBase" />
+    <PackageReference Include="log4net" Version="3.5.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="System.Management" Version="8.0.0" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="App\AppSettings.cs" />
-    <Compile Include="App\Autostart.cs" />
-    <Compile Include="App\Program.cs" />
-    <Compile Include="App\TrayApplicationContext.cs" />
-    <Compile Include="Devices\Audio\AudioService.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\AUDIO_VOLUME_NOTIFICATION_DATA.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\AudioEndpointVolume.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\AudioEndpointVolumeCallback.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\AudioEndpointVolumeChannel.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\AudioEndpointVolumeChannels.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\AudioEndpointVolumeNotificationDelegate.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\AudioEndpointVolumeStepInformation.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\AudioEndPointVolumeVolumeRange.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\AudioMeterInformation.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\AudioMeterInformationChannels.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\AudioSessionControl.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\AudioSessionDisconnectReason.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\AudioSessionManager.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\AudioSessionState.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\AudioVolumeNotificationData.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\Blob.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\CLSCTX.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\EDataFlow.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\EDeviceState.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\EEndpointHardwareSupport.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\ERole.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\eStgmAccess.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\IAudioEndpointVolume.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\IAudioEndpointVolumeCallback.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\IAudioMeterInformation.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\IAudioPeakMeter.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\IAudioSessionControl2.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\IAudioSessionEnumerator.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\IAudioSessionEvents.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\IAudioSessionManager2.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\IMMDevice.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\IMMDeviceCollection.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\IMMDeviceEnumerator.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\IMMEndpoint.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\IPropertyStore.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\ISimpleAudioVolume.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\MMDevice.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\MMDeviceCollection.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\MMDeviceEnumerator.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\PKEY.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\PropertyKey.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\PropertyStore.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\PropertyStoreProperty.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\PropVariant.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\SessionCollection.cs" />
-    <Compile Include="Devices\Audio\Native\CoreAudio\SimpleAudioVolume.cs" />
-    <Compile Include="Devices\Display\MonitorDevices.cs" />
-    <Compile Include="Devices\Display\MonitorRegistry.cs" />
-    <Compile Include="Devices\Display\Native\DdcMonitorItem.cs" />
-    <Compile Include="Devices\Display\Native\DisplayContext.cs" />
-    <Compile Include="Devices\Display\Native\DisplayInfo.cs" />
-    <Compile Include="Devices\Display\Native\DisplayInfoGet.cs" />
-    <Compile Include="Devices\Display\Native\DisplayMonitorHandles.cs" />
-    <Compile Include="Devices\Display\Native\Error.cs" />
-    <Compile Include="Devices\Display\Native\IMonitor.cs" />
-    <Compile Include="Devices\Display\Native\MonitorConfiguration.cs" />
-    <Compile Include="Devices\Display\Native\MonitorItem.cs" />
-    <Compile Include="Devices\Display\Native\MSMonitor.cs" />
-    <Compile Include="Devices\Display\Native\PowerManagement.cs" />
-    <Compile Include="Devices\Display\SystemMonitorEnumerator.cs" />
-    <Compile Include="Devices\Power\PowerService.cs" />
-    <Compile Include="Devices\Power\ShutdownScheduler.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Tunnel\FrpTunnel.cs" />
-    <Compile Include="Web\RequestGuard.cs" />
-    <Compile Include="Web\TokenAuthenticator.cs" />
-    <Compile Include="Web\WebServer.cs" />
+    <EmbeddedResource Include="ico\app.ico" LogicalName="PCDeviceManage.app.ico" />
+    <EmbeddedResource Include="Web\wwwroot\index.html" LogicalName="PCDeviceManage.wwwroot.index.html" />
+    <EmbeddedResource Include="Web\wwwroot\login.html" LogicalName="PCDeviceManage.wwwroot.login.html" />
   </ItemGroup>
+
   <ItemGroup>
-    <None Include="App.config" />
+    <None Update="log4net.config" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="frp\frpc.example.ini" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="frp\LICENSE" CopyToOutputDirectory="PreserveNewest" />
     <!-- frpc.ini 和 frpc.exe 不入库，存在时才复制到输出目录。 -->
-    <None Include="frp\frpc.ini" Condition="Exists('frp\frpc.ini')">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="frp\frpc.example.ini">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="frp\LICENSE">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="log4net.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="packages.config" />
+    <None Update="frp\frpc.ini" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="frp\frpc.exe" Condition="Exists('frp\frpc.exe')" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Monitorian.Supplement\Monitorian.Supplement.csproj">
-      <Project>{6E338214-E33C-4014-9BDD-6D914E6C536D}</Project>
-      <Name>Monitorian.Supplement</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <BootstrapperPackage Include=".NETFramework,Version=v4.6">
-      <Visible>False</Visible>
-      <ProductName>Microsoft .NET Framework 4.6 %28x86 和 x64%29</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="ico\app.ico">
-      <LogicalName>PCDeviceManage.app.ico</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Web\wwwroot\index.html">
-      <LogicalName>PCDeviceManage.wwwroot.index.html</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Web\wwwroot\login.html">
-      <LogicalName>PCDeviceManage.wwwroot.login.html</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="frp\frpc.exe" Condition="Exists('frp\frpc.exe')">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
 </Project>

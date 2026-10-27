@@ -82,33 +82,31 @@ namespace PCDeviceManage.Tests
             using (var dir = new TempDirectory())
             {
                 bool created;
-                AppSettings first = AppSettings.LoadOrCreate(dir.File("settings.json"), null, null, out created);
+                AppSettings first = AppSettings.LoadOrCreate(dir.File("settings.json"), null, out created);
                 Assert.True(created && first.AccessToken.Length >= 32, "Expected a random token to be generated.");
                 Assert.True(first.WebPort == 9527 && first.WebHost == "127.0.0.1" && first.FrpEnabled, "Expected defaults.");
 
-                AppSettings second = AppSettings.LoadOrCreate(dir.File("settings.json"), null, null, out created);
+                AppSettings second = AppSettings.LoadOrCreate(dir.File("settings.json"), null, out created);
                 Assert.True(!created && second.AccessToken == first.AccessToken, "Expected the saved token to be reused.");
             }
         }
 
         [Fact]
-        public void SettingsMigrateLegacyConfiguration()
+        public void SettingsMigrateLegacyTokenFile()
         {
             using (var dir = new TempDirectory())
             {
                 string legacyToken = dir.File("access_token");
                 File.WriteAllText(legacyToken, "token-from-file\r\n");
-                var legacy = new System.Collections.Specialized.NameValueCollection { { "WebPort", "8080" }, { "WebHost", "+" } };
 
                 bool created;
-                AppSettings settings = AppSettings.LoadOrCreate(dir.File("settings.json"), legacy, legacyToken, out created);
+                AppSettings settings = AppSettings.LoadOrCreate(dir.File("settings.json"), legacyToken, out created);
                 Assert.True(!created && settings.AccessToken == "token-from-file", "Expected the P0 token file to be migrated.");
-                Assert.True(settings.WebPort == 8080 && settings.WebHost == "+", "Expected App.config values to be migrated.");
                 Assert.True(!File.Exists(legacyToken), "Expected the legacy token file to be removed.");
 
-                legacy["AccessToken"] = "token-from-config";
-                AppSettings again = AppSettings.LoadOrCreate(dir.File("settings.json"), legacy, legacyToken, out created);
-                Assert.True(again.AccessToken == "token-from-file", "Expected an existing settings file to win over legacy values.");
+                File.WriteAllText(legacyToken, "stale-token");
+                AppSettings again = AppSettings.LoadOrCreate(dir.File("settings.json"), legacyToken, out created);
+                Assert.True(again.AccessToken == "token-from-file", "Expected an existing settings file to win over a stale token file.");
             }
         }
 
@@ -119,7 +117,7 @@ namespace PCDeviceManage.Tests
             {
                 File.WriteAllText(dir.File("settings.json"), "{ \"webPort\": 70000, \"webHost\": \" \", \"accessToken\": \"keep-me\", \"frpEnabled\": false }");
                 bool created;
-                AppSettings settings = AppSettings.LoadOrCreate(dir.File("settings.json"), null, null, out created);
+                AppSettings settings = AppSettings.LoadOrCreate(dir.File("settings.json"), null, out created);
                 Assert.True(settings.WebPort == 9527 && settings.WebHost == "127.0.0.1", "Expected invalid port/host to fall back to defaults.");
                 Assert.True(!created && settings.AccessToken == "keep-me" && !settings.FrpEnabled, "Expected valid values to be kept.");
                 Assert.True(File.ReadAllText(dir.File("settings.json")).Contains("9527"), "Expected the corrected file to be saved.");
@@ -135,7 +133,7 @@ namespace PCDeviceManage.Tests
                 try
                 {
                     bool created;
-                    AppSettings.LoadOrCreate(dir.File("settings.json"), null, null, out created);
+                    AppSettings.LoadOrCreate(dir.File("settings.json"), null, out created);
                     Assert.True(false, "Expected corrupt settings to throw.");
                 }
                 catch (InvalidDataException)

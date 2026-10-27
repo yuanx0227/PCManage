@@ -465,10 +465,14 @@ namespace PCDeviceManage
             const string wwwrootPrefix = "PCDeviceManage.wwwroot.";
             if (resourceName.StartsWith(wwwrootPrefix, StringComparison.Ordinal))
             {
-                string source = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\Web\wwwroot", resourceName.Substring(wwwrootPrefix.Length)));
-                if (File.Exists(source))
+                string fileName = resourceName.Substring(wwwrootPrefix.Length);
+                for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir != null; dir = dir.Parent)
                 {
-                    return File.ReadAllBytes(source);
+                    string source = Path.Combine(dir.FullName, "Web", "wwwroot", fileName);
+                    if (File.Exists(source))
+                    {
+                        return File.ReadAllBytes(source);
+                    }
                 }
             }
 #endif

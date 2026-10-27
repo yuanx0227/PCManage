@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- 主项目是 .NET Framework 4.6、Debug 为 x86，测试项目跟随（Test SDK 最低支持 net462）。 -->
-    <TargetFramework>net462</TargetFramework>
-    <PlatformTarget>x86</PlatformTarget>
-    <LangVersion>7.3</LangVersion>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
     <RootNamespace>PCDeviceManage.Tests</RootNamespace>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
@@ -17,20 +18,23 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <!-- 不依赖本机安装的 .NET Framework 目标包。 -->
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="log4net" Version="2.0.14" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="System.Windows.Forms" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PCDeviceManage\PCDeviceManage.csproj" />
+    <!-- 只需要 FakeFrpc 的输出文件，不引用它的程序集。 -->
+    <ProjectReference Include="..\FakeFrpc\FakeFrpc.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
+
+  <!-- 把 FakeFrpc 的 exe、dll 和 runtimeconfig 复制到测试输出的 FakeFrpc 子目录。 -->
+  <Target Name="CopyFakeFrpc" AfterTargets="Build">
+    <MSBuild Projects="..\FakeFrpc\FakeFrpc.csproj" Targets="GetTargetPath" Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" PropertyName="FakeFrpcDll" />
+    </MSBuild>
+    <ItemGroup>
+      <FakeFrpcFiles Include="$([System.IO.Path]::GetDirectoryName('$(FakeFrpcDll)'))\FakeFrpc.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(FakeFrpcFiles)" DestinationFolder="$(OutDir)FakeFrpc" SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>

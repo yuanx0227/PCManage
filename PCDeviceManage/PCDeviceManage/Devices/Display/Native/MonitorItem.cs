@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Windows;
+using System.Drawing;
 
 namespace PCDeviceManage
 {
@@ -12,7 +12,7 @@ namespace PCDeviceManage
 		public string Description { get; }
 		public byte DisplayIndex { get; }
 		public byte MonitorIndex { get; }
-		public Rect MonitorRect { get; }
+		public Rectangle MonitorRect { get; }
 		public bool IsReachable { get; }
 
 		public virtual bool IsBrightnessSupported => IsReachable;
@@ -24,7 +24,7 @@ namespace PCDeviceManage
 			string description,
 			byte displayIndex,
 			byte monitorIndex,
-			Rect monitorRect,
+			Rectangle monitorRect,
 			bool isReachable
 			
 			)

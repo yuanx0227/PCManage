@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -13,38 +14,15 @@ namespace PCDeviceManage.Tests
     public static class TestSupport
     {
         /// <summary>
-        /// 编译一个假的 frpc.exe：配置文件内容为 stay 时输出连接成功并保持运行，否则输出登录失败并退出。
+        /// 把测试输出 FakeFrpc 目录下的假 frpc 复制到 directory，exe 改名为 frpc.exe（它按内置的文件名找 FakeFrpc.dll）。
         /// </summary>
-        public static void CompileFakeFrpc(string outputPath)
+        public static void CopyFakeFrpc(string directory)
         {
-            const string source = @"
-using System;
-using System.IO;
-using System.Threading;
-
-static class FakeFrpc
-{
-    static int Main(string[] args)
-    {
-        string mode = File.ReadAllText(args[1]).Trim();
-        if (mode == ""stay"")
-        {
-            Console.WriteLine(""2026/10/27 20:00:00 [I] [control.go:181] [test] [pcmanage] start proxy success"");
-            Thread.Sleep(TimeSpan.FromMinutes(1));
-            return 0;
-        }
-        Console.WriteLine(""2026/10/27 20:00:00 [W] [service.go:104] login to server failed: test"");
-        return 1;
-    }
-}";
-            using (var provider = new Microsoft.CSharp.CSharpCodeProvider())
+            string source = Path.Combine(AppContext.BaseDirectory, "FakeFrpc");
+            foreach (string file in Directory.GetFiles(source, "FakeFrpc.*"))
             {
-                var parameters = new System.CodeDom.Compiler.CompilerParameters(new[] { "System.dll" }, outputPath)
-                {
-                    GenerateExecutable = true
-                };
-                var result = provider.CompileAssemblyFromSource(parameters, source);
-                Assert.True(!result.Errors.HasErrors, "Failed to compile fake frpc: " + string.Join("; ", result.Errors.Cast<System.CodeDom.Compiler.CompilerError>().Select(e => e.ErrorText)));
+                string name = Path.GetFileName(file);
+                File.Copy(file, Path.Combine(directory, name == "FakeFrpc.exe" ? "frpc.exe" : name));
             }
         }
 
@@ -108,13 +86,32 @@ static class FakeFrpc
             }
         }
 
+        /// <summary>HTTP 响应的状态码和头（响应头与内容头合并，多个值用逗号连接）。</summary>
+        public sealed class TestResponse
+        {
+            private readonly Dictionary<string, string> _headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            public TestResponse(HttpResponseMessage response)
+            {
+                StatusCode = response.StatusCode;
+                foreach (var header in response.Headers.Concat(response.Content.Headers))
+                {
+                    _headers[header.Key] = string.Join(", ", header.Value);
+                }
+            }
+
+            public HttpStatusCode StatusCode { get; }
+
+            public IReadOnlyDictionary<string, string> Headers => _headers;
+        }
+
         public sealed class TestServer : IDisposable
         {
             public const string Token = "integration-token";
 
             private readonly WebServer _server;
             private readonly MonitorRegistry _registry;
-            private readonly CookieContainer _cookies = new CookieContainer();
+            private readonly HttpClient _client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, CookieContainer = new CookieContainer() });
             private readonly int _port;
 
             public string LastBody { get; private set; }
@@ -144,58 +141,41 @@ static class FakeFrpc
                 Assert.True(_server.Start(), "Expected test web server to start.");
             }
 
-            public HttpWebResponse Send(string method, string path, string form = null, IDictionary<string, string> headers = null, bool csrfHeader = true)
+            public TestResponse Send(string method, string path, string form = null, IDictionary<string, string> headers = null, bool csrfHeader = true)
             {
-                var request = (HttpWebRequest)WebRequest.Create("http://127.0.0.1:" + _port + path);
-                request.Method = method;
-                request.AllowAutoRedirect = false;
-                request.CookieContainer = _cookies;
-                if (method != "GET" && csrfHeader)
+                using (var request = new HttpRequestMessage(new HttpMethod(method), "http://127.0.0.1:" + _port + path))
                 {
-                    request.Headers[RequestGuard.CsrfHeaderName] = "1";
-                }
-                if (headers != null)
-                {
-                    foreach (var header in headers)
+                    if (method != "GET" && csrfHeader)
                     {
-                        request.Headers[header.Key] = header.Value;
+                        request.Headers.TryAddWithoutValidation(RequestGuard.CsrfHeaderName, "1");
+                    }
+                    if (headers != null)
+                    {
+                        foreach (var header in headers)
+                        {
+                            request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                        }
+                    }
+                    if (form != null)
+                    {
+                        request.Content = new StringContent(form, Encoding.UTF8, "application/x-www-form-urlencoded");
+                    }
+                    else if (method != "GET")
+                    {
+                        request.Content = new ByteArrayContent(Array.Empty<byte>());
+                    }
+
+                    using (HttpResponseMessage response = _client.Send(request))
+                    {
+                        LastBody = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                        return new TestResponse(response);
                     }
                 }
-                if (form != null)
-                {
-                    byte[] body = Encoding.UTF8.GetBytes(form);
-                    request.ContentType = "application/x-www-form-urlencoded";
-                    request.ContentLength = body.Length;
-                    using (Stream stream = request.GetRequestStream())
-                    {
-                        stream.Write(body, 0, body.Length);
-                    }
-                }
-                else if (method != "GET")
-                {
-                    request.ContentLength = 0;
-                }
-
-                HttpWebResponse response;
-                try
-                {
-                    response = (HttpWebResponse)request.GetResponse();
-                }
-                catch (WebException ex) when (ex.Response is HttpWebResponse)
-                {
-                    response = (HttpWebResponse)ex.Response;
-                }
-
-                using (var reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
-                {
-                    LastBody = reader.ReadToEnd();
-                }
-                response.Close();
-                return response;
             }
 
             public void Dispose()
             {
+                _client.Dispose();
                 _server.Dispose();
                 _registry.Dispose();
                 Scheduler.Dispose();

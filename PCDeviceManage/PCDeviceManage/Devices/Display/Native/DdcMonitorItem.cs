@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Windows;
+using System.Drawing;
 
 namespace PCDeviceManage
 {
@@ -21,7 +21,7 @@ namespace PCDeviceManage
 			string description,
 			byte displayIndex,
 			byte monitorIndex,
-			Rect monitorRect,
+			Rectangle monitorRect,
 			SafePhysicalMonitorHandle handle,
 			MonitorCapability capability) : base(
 				deviceInstanceId: deviceInstanceId,

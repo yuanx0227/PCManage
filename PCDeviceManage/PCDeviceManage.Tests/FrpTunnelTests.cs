@@ -58,7 +58,7 @@ namespace PCDeviceManage.Tests
         {
             using (var dir = new TempDirectory())
             {
-                CompileFakeFrpc(dir.File("frpc.exe"));
+                CopyFakeFrpc(dir.Path);
 
                 File.WriteAllText(dir.File("frpc.ini"), "stay");
                 int pid;

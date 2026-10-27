@@ -1,10 +1,11 @@
 ﻿using log4net;
+using log4net.Config;
 using System;
-using System.Configuration;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
+using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -26,7 +27,9 @@ namespace PCDeviceManage
         [STAThread]
         static void Main()
         {
-            log4net.GlobalContext.Properties["pid"] = Process.GetCurrentProcess().Id;
+            log4net.GlobalContext.Properties["pid"] = Environment.ProcessId;
+            XmlConfigurator.ConfigureAndWatch(LogManager.GetRepository(Assembly.GetEntryAssembly()),
+                new FileInfo(Path.Combine(AppContext.BaseDirectory, "log4net.config")));
             _log = LogManager.GetLogger(typeof(Program));
 
             bool createdNew;
@@ -38,13 +41,12 @@ namespace PCDeviceManage
                     return;
                 }
 
-                Application.EnableVisualStyles();
-                Application.SetCompatibleTextRenderingDefault(false);
+                ApplicationConfiguration.Initialize();
 
                 bool tokenCreated;
                 try
                 {
-                    _settings = AppSettings.LoadOrCreate(AppSettings.DefaultPath, ConfigurationManager.AppSettings, AppSettings.LegacyTokenPath, out tokenCreated);
+                    _settings = AppSettings.LoadOrCreate(AppSettings.DefaultPath, AppSettings.LegacyTokenPath, out tokenCreated);
                     if (tokenCreated)
                     {
                         _log.Warn("已生成访问令牌并保存到 " + AppSettings.DefaultPath + "，打开控制台时在登录页输入该令牌。");
@@ -95,7 +97,7 @@ namespace PCDeviceManage
 
             bool webStarted = StartWebServer(powerService);
 
-            _frpTunnel = new FrpTunnel(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "frp"), _settings.FrpEnabled, _log);
+            _frpTunnel = new FrpTunnel(Path.Combine(AppContext.BaseDirectory, "frp"), _settings.FrpEnabled, _log);
             _frpTunnel.Start();
             return webStarted;
         }
