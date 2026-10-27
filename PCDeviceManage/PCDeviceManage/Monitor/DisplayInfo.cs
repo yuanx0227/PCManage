@@ -24,7 +24,7 @@ namespace PCDeviceManage
 	public class DisplayInfo
 	{
 		//日志方法调用
-		private static ILog _log = LogManager.GetLogger("DisplayInfo");
+		private static ILog _log = LogManager.GetLogger(typeof(DisplayInfo));
 
 		[DataContract]
 		public class DisplayItem : IDisplayItem

@@ -32,7 +32,10 @@ namespace PCDeviceManage.Tests
                 Test(nameof(LoginLocksAfterRepeatedFailures), LoginLocksAfterRepeatedFailures),
                 Test(nameof(SuccessfulLoginResetsFailureCount), SuccessfulLoginResetsFailureCount),
                 Test(nameof(SessionValueIsBoundToToken), SessionValueIsBoundToToken),
-                Test(nameof(TokenIsGeneratedOnceAndReused), TokenIsGeneratedOnceAndReused),
+                Test(nameof(SettingsGenerateTokenOnceAndReuse), SettingsGenerateTokenOnceAndReuse),
+                Test(nameof(SettingsMigrateLegacyConfiguration), SettingsMigrateLegacyConfiguration),
+                Test(nameof(SettingsFixInvalidValues), SettingsFixInvalidValues),
+                Test(nameof(SettingsRejectCorruptFile), SettingsRejectCorruptFile),
                 Test(nameof(WebServerRequiresLogin), WebServerRequiresLogin),
                 Test(nameof(WebServerAcceptsTokenHeader), WebServerAcceptsTokenHeader),
                 Test(nameof(RequestGuardRequiresHeaderAndSameOrigin), RequestGuardRequiresHeaderAndSameOrigin),
@@ -345,27 +348,91 @@ namespace PCDeviceManage.Tests
             Assert(!first.IsValidSession(null) && !first.IsValidSession(""), "Expected empty session to be rejected.");
         }
 
-        private static void TokenIsGeneratedOnceAndReused()
+        private static void SettingsGenerateTokenOnceAndReuse()
         {
-            string dir = Path.Combine(Path.GetTempPath(), "pcmanage-tests-" + Guid.NewGuid().ToString("N"));
-            string file = Path.Combine(dir, "access_token");
-            try
+            using (var dir = new TempDirectory())
             {
                 bool created;
-                string generated = TokenAuthenticator.LoadOrCreateToken(null, file, out created);
-                Assert(created && generated.Length >= 32, "Expected a new random token to be generated.");
+                AppSettings first = AppSettings.LoadOrCreate(dir.File("settings.json"), null, null, out created);
+                Assert(created && first.AccessToken.Length >= 32, "Expected a random token to be generated.");
+                Assert(first.WebPort == 9527 && first.WebHost == "127.0.0.1" && first.FrpEnabled, "Expected defaults.");
 
-                string reused = TokenAuthenticator.LoadOrCreateToken("", file, out created);
-                Assert(!created && reused == generated, "Expected the saved token to be reused.");
-
-                string configured = TokenAuthenticator.LoadOrCreateToken(" from-config ", file, out created);
-                Assert(!created && configured == "from-config", "Expected configured token to take precedence.");
+                AppSettings second = AppSettings.LoadOrCreate(dir.File("settings.json"), null, null, out created);
+                Assert(!created && second.AccessToken == first.AccessToken, "Expected the saved token to be reused.");
             }
-            finally
+        }
+
+        private static void SettingsMigrateLegacyConfiguration()
+        {
+            using (var dir = new TempDirectory())
             {
-                if (Directory.Exists(dir))
+                string legacyToken = dir.File("access_token");
+                File.WriteAllText(legacyToken, "token-from-file\r\n");
+                var legacy = new System.Collections.Specialized.NameValueCollection { { "WebPort", "8080" }, { "WebHost", "+" } };
+
+                bool created;
+                AppSettings settings = AppSettings.LoadOrCreate(dir.File("settings.json"), legacy, legacyToken, out created);
+                Assert(!created && settings.AccessToken == "token-from-file", "Expected the P0 token file to be migrated.");
+                Assert(settings.WebPort == 8080 && settings.WebHost == "+", "Expected App.config values to be migrated.");
+                Assert(!File.Exists(legacyToken), "Expected the legacy token file to be removed.");
+
+                legacy["AccessToken"] = "token-from-config";
+                AppSettings again = AppSettings.LoadOrCreate(dir.File("settings.json"), legacy, legacyToken, out created);
+                Assert(again.AccessToken == "token-from-file", "Expected an existing settings file to win over legacy values.");
+            }
+        }
+
+        private static void SettingsFixInvalidValues()
+        {
+            using (var dir = new TempDirectory())
+            {
+                File.WriteAllText(dir.File("settings.json"), "{ \"webPort\": 70000, \"webHost\": \" \", \"accessToken\": \"keep-me\", \"frpEnabled\": false }");
+                bool created;
+                AppSettings settings = AppSettings.LoadOrCreate(dir.File("settings.json"), null, null, out created);
+                Assert(settings.WebPort == 9527 && settings.WebHost == "127.0.0.1", "Expected invalid port/host to fall back to defaults.");
+                Assert(!created && settings.AccessToken == "keep-me" && !settings.FrpEnabled, "Expected valid values to be kept.");
+                Assert(File.ReadAllText(dir.File("settings.json")).Contains("9527"), "Expected the corrected file to be saved.");
+            }
+        }
+
+        private static void SettingsRejectCorruptFile()
+        {
+            using (var dir = new TempDirectory())
+            {
+                File.WriteAllText(dir.File("settings.json"), "{ not json");
+                try
                 {
-                    Directory.Delete(dir, true);
+                    bool created;
+                    AppSettings.LoadOrCreate(dir.File("settings.json"), null, null, out created);
+                    Assert(false, "Expected corrupt settings to throw.");
+                }
+                catch (InvalidDataException)
+                {
+                }
+                Assert(File.ReadAllText(dir.File("settings.json")) == "{ not json", "Expected the corrupt file to be left untouched.");
+            }
+        }
+
+        private sealed class TempDirectory : IDisposable
+        {
+            public TempDirectory()
+            {
+                Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "pcmanage-tests-" + Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(Path);
+            }
+
+            public string Path { get; }
+
+            public string File(string name)
+            {
+                return System.IO.Path.Combine(Path, name);
+            }
+
+            public void Dispose()
+            {
+                if (Directory.Exists(Path))
+                {
+                    Directory.Delete(Path, true);
                 }
             }
         }

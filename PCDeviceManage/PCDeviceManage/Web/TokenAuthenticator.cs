@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -103,42 +102,6 @@ namespace PCDeviceManage
                 return new LoginResult(LoginStatus.Locked, lockout);
             }
         }
-
-        /// <summary>
-        /// 读取访问令牌：优先用 App.config 的 AccessToken，否则用 %LocalAppData%\PCManage\access_token，都没有则生成一个。
-        /// </summary>
-        public static string LoadOrCreateToken(string configuredToken, string tokenFilePath, out bool created)
-        {
-            created = false;
-            if (!string.IsNullOrWhiteSpace(configuredToken))
-            {
-                return configuredToken.Trim();
-            }
-
-            if (File.Exists(tokenFilePath))
-            {
-                string saved = File.ReadAllText(tokenFilePath, Encoding.UTF8).Trim();
-                if (!string.IsNullOrEmpty(saved))
-                {
-                    return saved;
-                }
-            }
-
-            byte[] buffer = new byte[24];
-            using (var rng = RandomNumberGenerator.Create())
-            {
-                rng.GetBytes(buffer);
-            }
-            string token = Base64Url(buffer);
-
-            Directory.CreateDirectory(Path.GetDirectoryName(tokenFilePath));
-            File.WriteAllText(tokenFilePath, token, new UTF8Encoding(false));
-            created = true;
-            return token;
-        }
-
-        public static string DefaultTokenFilePath =>
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PCManage", "access_token");
 
         private static string ComputeSessionValue(string token)
         {

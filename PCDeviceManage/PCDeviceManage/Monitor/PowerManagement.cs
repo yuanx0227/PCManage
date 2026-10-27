@@ -11,7 +11,7 @@ namespace PCDeviceManage
     {
 
 		//日志方法调用
-		private static ILog _log = LogManager.GetLogger("PowerManagement");
+		private static ILog _log = LogManager.GetLogger(typeof(PowerManagement));
 
 		#region Win32
 

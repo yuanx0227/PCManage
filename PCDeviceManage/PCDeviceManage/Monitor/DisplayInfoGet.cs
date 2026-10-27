@@ -10,7 +10,7 @@ namespace PCDeviceManage
     {
 
 		//日志方法调用
-		private static ILog _log = LogManager.GetLogger("DisplayInfoGet");
+		private static ILog _log = LogManager.GetLogger(typeof(DisplayInfoGet));
 
 		public class DeviceItemPlus
 		{

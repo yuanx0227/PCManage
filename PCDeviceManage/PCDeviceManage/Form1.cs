@@ -17,7 +17,7 @@ namespace PCDeviceManage
     public partial class Form1 : Form
     {
         //日志方法调用
-        private static ILog _log = LogManager.GetLogger("Form1");
+        private static ILog _log = LogManager.GetLogger(typeof(Form1));
 
         [DllImport("user32")]
         private static extern void LockWorkStation();

@@ -15,6 +15,7 @@ namespace PCDeviceManage
     {
 
         private static ILog _log = null;
+        private static AppSettings _settings;
         private static LocalWebServer _webServer;
         private static MonitorRegistry _monitorRegistry;
         private static ShutdownScheduler _shutdownScheduler;
@@ -22,7 +23,23 @@ namespace PCDeviceManage
         static void Main(string[] args)
         {
             log4net.GlobalContext.Properties["pid"] = Process.GetCurrentProcess().Id;
-            _log = LogManager.GetLogger("Program.Main");
+            _log = LogManager.GetLogger(typeof(Program));
+
+            try
+            {
+                bool tokenCreated;
+                _settings = AppSettings.LoadOrCreate(AppSettings.DefaultPath, ConfigurationManager.AppSettings, AppSettings.LegacyTokenPath, out tokenCreated);
+                if (tokenCreated)
+                {
+                    _log.Warn("已生成访问令牌并保存到 " + AppSettings.DefaultPath + "，打开控制台时在登录页输入该令牌。");
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.Error("读取配置失败", ex);
+                MessageBox.Show("读取配置失败：" + ex.Message, "PC控制", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
 
             Start();
             Application.ApplicationExit += (sender, eventArgs) => Stop();
@@ -37,6 +54,12 @@ namespace PCDeviceManage
         /// </summary>
         private static void StartFrp()
         {
+            if (!_settings.FrpEnabled)
+            {
+                _log.Info("配置中已关闭 frp 端口映射。");
+                return;
+            }
+
             string frpDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "frp");
             if (!File.Exists(Path.Combine(frpDirectory, "frpc.exe")) || !File.Exists(Path.Combine(frpDirectory, "frpc.ini")))
             {
@@ -74,8 +97,8 @@ namespace PCDeviceManage
         //打开Web服务端口
         static bool OpenWebServer()
         {
-            int port = ReadIntSetting("WebPort", ReadIntSetting("Port", 9527));
-            string host = ConfigurationManager.AppSettings["WebHost"];
+            int port = _settings.WebPort;
+            string host = _settings.WebHost;
             try
             {
                 //开放端口前先判断该端口是否已存在。
@@ -102,46 +125,13 @@ namespace PCDeviceManage
                     _shutdownScheduler = new ShutdownScheduler(windowsManage.WindowsShutdown);
                 }
 
-                _webServer = new LocalWebServer(_monitorRegistry, new AudioService(), windowsManage, _shutdownScheduler, CreateAuthenticator(), port, host, _log);
+                _webServer = new LocalWebServer(_monitorRegistry, new AudioService(), windowsManage, _shutdownScheduler, new TokenAuthenticator(_settings.AccessToken), port, host, _log);
                 return _webServer.Start();
             }
             catch (Exception ex)
             {
                 _log.Error($"开放Web端口{port}失败", ex);
                 return false;
-            }
-        }
-
-        static TokenAuthenticator CreateAuthenticator()
-        {
-            string tokenFile = TokenAuthenticator.DefaultTokenFilePath;
-            bool created;
-            string token = TokenAuthenticator.LoadOrCreateToken(ConfigurationManager.AppSettings["AccessToken"], tokenFile, out created);
-            if (created)
-            {
-                _log.Warn("已生成访问令牌并保存到 " + tokenFile + "，打开控制台时在登录页输入该令牌。");
-            }
-            else if (string.IsNullOrWhiteSpace(ConfigurationManager.AppSettings["AccessToken"]))
-            {
-                _log.Info("访问令牌读取自 " + tokenFile);
-            }
-            else
-            {
-                _log.Info("访问令牌读取自 App.config 的 AccessToken。");
-            }
-            return new TokenAuthenticator(token);
-        }
-
-        static int ReadIntSetting(string key, int defaultValue)
-        {
-            try
-            {
-                int value;
-                return int.TryParse(ConfigurationManager.AppSettings[key], out value) ? value : defaultValue;
-            }
-            catch
-            {
-                return defaultValue;
             }
         }
 

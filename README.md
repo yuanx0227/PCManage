@@ -9,7 +9,19 @@ PCManage is a lightweight Windows device-control tool that exposes a local web c
 # 使用
 
 ## 访问令牌
-控制台需要登录后才能使用。首次运行时会自动生成访问令牌，保存在 `%LocalAppData%\PCManage\access_token`；也可以在 `PCDeviceManage.exe.config` 的 `AccessToken` 中自行指定。浏览器打开控制台后，在登录页输入令牌即可。
+控制台需要登录后才能使用。首次运行时会自动生成访问令牌，保存在 `%LocalAppData%\PCManage\settings.json` 的 `accessToken` 中，也可以改成自己的值（重启程序生效）。浏览器打开控制台后，在登录页输入令牌即可。
+
+## 配置
+配置文件是 `%LocalAppData%\PCManage\settings.json`：
+
+| 字段 | 默认值 | 说明 |
+|---|---|---|
+| `webHost` | `127.0.0.1` | 监听地址。局域网访问可改成 `+`（需要管理员执行一次 `netsh http add urlacl`） |
+| `webPort` | `9527` | 端口，frp 示例配置默认映射这个端口 |
+| `accessToken` | 自动生成 | 访问令牌 |
+| `frpEnabled` | `true` | `frp\frpc.exe` 和 `frp\frpc.ini` 都存在时是否启动 frp |
+
+日志写在 `%LocalAppData%\PCManage\Log`。
 
 脚本或快捷指令可以在请求头 `X-Access-Token` 中携带令牌；会改变状态的接口（锁屏、关机、亮度、音量等）只接受 POST，并且必须带请求头 `X-PCM-Request: 1`。
 

@@ -120,7 +120,7 @@ namespace PCDeviceManage
             <button type=""submit"">&#x767B;&#x5F55;</button>
             <p class=""error"" id=""error""></p>
         </form>
-        <p class=""hint"">&#x4EE4;&#x724C;&#x4FDD;&#x5B58;&#x5728;&#x7535;&#x8111;&#x7684; %LocalAppData%\PCManage\access_token &#x6587;&#x4EF6;&#x4E2D;&#xFF0C;&#x4E5F;&#x53EF;&#x4EE5;&#x5728; App.config &#x7684; AccessToken &#x4E2D;&#x6307;&#x5B9A;&#x3002;</p>
+        <p class=""hint"">&#x4EE4;&#x724C;&#x4FDD;&#x5B58;&#x5728;&#x7535;&#x8111;&#x7684; %LocalAppData%\PCManage\settings.json &#x7684; accessToken &#x4E2D;&#x3002;</p>
     </div>
 
     <script>

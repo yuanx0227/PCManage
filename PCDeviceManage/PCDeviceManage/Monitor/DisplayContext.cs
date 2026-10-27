@@ -13,7 +13,7 @@ namespace PCDeviceManage
 	public class DisplayContext
 	{
 		//日志方法调用
-		private static ILog _log = LogManager.GetLogger("DisplayContext");
+		private static ILog _log = LogManager.GetLogger(typeof(DisplayContext));
 
 		[DataContract]
 		public class DeviceItem
