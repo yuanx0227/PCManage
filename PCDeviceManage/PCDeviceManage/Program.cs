@@ -16,7 +16,7 @@ namespace PCDeviceManage
 
         private static ILog _log = null;
         private static LocalWebServer _webServer;
-        private static DisplayDeviceCache _displayDeviceCache;
+        private static MonitorRegistry _monitorRegistry;
 
         static void Main(string[] args)
         {
@@ -89,13 +89,13 @@ namespace PCDeviceManage
                     }
                 }
 
-                if (_displayDeviceCache == null)
+                if (_monitorRegistry == null)
                 {
-                    _displayDeviceCache = new DisplayDeviceCache(new DisplayDeviceProvider(), _log);
-                    _displayDeviceCache.Start();
+                    _monitorRegistry = new MonitorRegistry(new SystemMonitorEnumerator(), _log);
+                    _monitorRegistry.Start();
                 }
 
-                _webServer = new LocalWebServer(new DisplayManage(_displayDeviceCache), new AudioManage(), new WindowsManage(), CreateAuthenticator(), port, host, _log);
+                _webServer = new LocalWebServer(_monitorRegistry, new AudioManage(), new WindowsManage(), CreateAuthenticator(), port, host, _log);
                 return _webServer.Start();
             }
             catch (Exception ex)
@@ -147,10 +147,10 @@ namespace PCDeviceManage
                     _webServer.Stop();
                     _webServer = null;
                 }
-                if (_displayDeviceCache != null)
+                if (_monitorRegistry != null)
                 {
-                    _displayDeviceCache.Dispose();
-                    _displayDeviceCache = null;
+                    _monitorRegistry.Dispose();
+                    _monitorRegistry = null;
                 }
                 StopFrp();
             }

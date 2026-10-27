@@ -93,8 +93,9 @@
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
     <Compile Include="Manage\AudioManage.cs" />
-    <Compile Include="Manage\DisplayDeviceCache.cs" />
-    <Compile Include="Manage\DisplayManage.cs" />
+    <Compile Include="Manage\MonitorDevices.cs" />
+    <Compile Include="Manage\MonitorRegistry.cs" />
+    <Compile Include="Manage\SystemMonitorEnumerator.cs" />
     <Compile Include="Web\IndexPage.cs" />
     <Compile Include="Web\LocalWebServer.cs" />
     <Compile Include="Web\LoginPage.cs" />

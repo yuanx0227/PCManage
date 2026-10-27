@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PCDeviceManage.Tests
 {
@@ -13,9 +16,14 @@ namespace PCDeviceManage.Tests
         {
             var tests = new List<KeyValuePair<string, Action>>
             {
-                Test(nameof(ForcedReadRefreshesDisplayList), ForcedReadRefreshesDisplayList),
-                Test(nameof(CachedReadCanReturnLastDisplayList), CachedReadCanReturnLastDisplayList),
-                Test(nameof(DisplayManageReadRefreshesDisplayList), DisplayManageReadRefreshesDisplayList),
+                Test(nameof(MonitorIdIsStableAndUrlSafe), MonitorIdIsStableAndUrlSafe),
+                Test(nameof(RegistryRoutesBrightnessById), RegistryRoutesBrightnessById),
+                Test(nameof(RegistryReadsHardwareOnlyWhenAsked), RegistryReadsHardwareOnlyWhenAsked),
+                Test(nameof(RescanDisposesReplacedMonitors), RescanDisposesReplacedMonitors),
+                Test(nameof(FailedWriteRescansAndRetries), FailedWriteRescansAndRetries),
+                Test(nameof(UnknownAndUnsupportedMonitorsAreRejected), UnknownAndUnsupportedMonitorsAreRejected),
+                Test(nameof(ConcurrentWritesKeepLatestValue), ConcurrentWritesKeepLatestValue),
+                Test(nameof(WebServerSetsBrightnessById), WebServerSetsBrightnessById),
                 Test(nameof(LoginAcceptsOnlyCorrectToken), LoginAcceptsOnlyCorrectToken),
                 Test(nameof(LoginLocksAfterRepeatedFailures), LoginLocksAfterRepeatedFailures),
                 Test(nameof(SuccessfulLoginResetsFailureCount), SuccessfulLoginResetsFailureCount),
@@ -51,48 +59,148 @@ namespace PCDeviceManage.Tests
             return new KeyValuePair<string, Action>(name, action);
         }
 
-        private static void ForcedReadRefreshesDisplayList()
+        private static void MonitorIdIsStableAndUrlSafe()
         {
-            var provider = new FakeDisplayDeviceProvider();
-            provider.SetBrightness(40);
-            var cache = new DisplayDeviceCache(provider);
-
-            string first = cache.GetDisplayListJson(true);
-            provider.SetBrightness(80);
-            string second = cache.GetDisplayListJson(true);
-
-            Assert(provider.CallCount == 2, "Expected forced reads to call provider each time.");
-            Assert(first.Contains("\"Brightness\":40"), "Expected first brightness to be serialized.");
-            Assert(second.Contains("\"Brightness\":80"), "Expected second brightness to be refreshed.");
+            string id = MonitorIds.FromDeviceInstanceId(@"DISPLAY\DELA0A1\5&2B2E1F0&0&UID4353");
+            Assert(id == MonitorIds.FromDeviceInstanceId(@"display\dela0a1\5&2b2e1f0&0&uid4353"), "Expected id to ignore case.");
+            Assert(id.Length == 8 && id.All(c => "0123456789abcdef".IndexOf(c) >= 0), "Expected an 8-char hex id.");
+            Assert(id != MonitorIds.FromDeviceInstanceId(@"DISPLAY\DELA0A1\5&2B2E1F0&0&UID4354"), "Expected different monitors to get different ids.");
         }
 
-        private static void CachedReadCanReturnLastDisplayList()
+        private static void RegistryRoutesBrightnessById()
         {
-            var provider = new FakeDisplayDeviceProvider();
-            var cache = new DisplayDeviceCache(provider);
+            var a = new FakeMonitor("aaaa0001", "External A");
+            var b = new FakeMonitor("bbbb0002", "External B");
+            using (var registry = CreateRegistry(a, b))
+            {
+                Assert(registry.SetBrightness("bbbb0002", 30) == BrightnessWriteStatus.Applied, "Expected write to B to apply.");
+                Assert(registry.SetBrightness("aaaa0001", 70) == BrightnessWriteStatus.Applied, "Expected write to A to apply.");
 
-            provider.SetBrightness(25);
-            cache.GetDisplayListJson(true);
-            provider.SetBrightness(75);
-            string cached = cache.GetDisplayListJson(false);
+                Assert(a.Writes.SequenceEqual(new[] { 70 }), "Expected A to receive only its own value.");
+                Assert(b.Writes.SequenceEqual(new[] { 30 }), "Expected B to receive only its own value.");
 
-            Assert(provider.CallCount == 1, "Expected cached read to avoid provider call.");
-            Assert(cached.Contains("\"Brightness\":25"), "Expected cached brightness to remain available.");
-            Assert(!cached.Contains("\"Brightness\":75"), "Expected cached read not to refresh state.");
+                var infos = registry.GetMonitors(false);
+                Assert(infos.Single(x => x.Id == "aaaa0001").Brightness == 70, "Expected A brightness to be reported.");
+                Assert(infos.Single(x => x.Id == "bbbb0002").Brightness == 30, "Expected B brightness to be reported.");
+            }
         }
 
-        private static void DisplayManageReadRefreshesDisplayList()
+        private static void RegistryReadsHardwareOnlyWhenAsked()
         {
-            var provider = new FakeDisplayDeviceProvider();
-            provider.SetBrightness(10);
-            var cache = new DisplayDeviceCache(provider);
-            var manager = new DisplayManage(cache);
+            var monitor = new FakeMonitor("aaaa0001", "External A");
+            using (var registry = CreateRegistry(monitor))
+            {
+                int afterScan = monitor.RefreshCount;
+                Assert(afterScan == 1, "Expected rescan to read brightness once.");
 
-            provider.SetBrightness(90);
-            string refreshed = manager.GetDisplayList();
+                registry.GetMonitors(false);
+                Assert(monitor.RefreshCount == afterScan, "Expected cached read not to touch hardware.");
 
-            Assert(provider.CallCount == 2, "Expected DisplayManage.GetDisplayList to refresh provider state.");
-            Assert(refreshed.Contains("\"Brightness\":90"), "Expected DisplayManage.GetDisplayList to return refreshed brightness.");
+                monitor.HardwareBrightness = 55;
+                var refreshed = registry.GetMonitors(true);
+                Assert(monitor.RefreshCount == afterScan + 1 && refreshed[0].Brightness == 55, "Expected refresh to read hardware.");
+            }
+        }
+
+        private static void RescanDisposesReplacedMonitors()
+        {
+            var first = new FakeMonitor("aaaa0001", "External A");
+            var second = new FakeMonitor("aaaa0001", "External A");
+            var enumerator = new FakeEnumerator(new IMonitorDevice[] { first }, new IMonitorDevice[] { second });
+            var registry = new MonitorRegistry(enumerator);
+            registry.Rescan();
+            registry.Rescan();
+
+            Assert(first.IsDisposed && !second.IsDisposed, "Expected the replaced monitor to be disposed.");
+            Assert(registry.SetBrightness("aaaa0001", 40) == BrightnessWriteStatus.Applied && second.Writes.SequenceEqual(new[] { 40 }), "Expected writes to go to the new monitor.");
+
+            registry.Dispose();
+            Assert(second.IsDisposed, "Expected registry dispose to release monitors.");
+        }
+
+        private static void FailedWriteRescansAndRetries()
+        {
+            var stale = new FakeMonitor("aaaa0001", "External A") { OnSet = value => false };
+            var fresh = new FakeMonitor("aaaa0001", "External A");
+            var enumerator = new FakeEnumerator(new IMonitorDevice[] { stale }, new IMonitorDevice[] { fresh });
+            using (var registry = new MonitorRegistry(enumerator))
+            {
+                registry.Rescan();
+                Assert(registry.SetBrightness("aaaa0001", 25) == BrightnessWriteStatus.Applied, "Expected write to succeed after rescan.");
+                Assert(enumerator.Calls == 2, "Expected a failed write to trigger exactly one rescan.");
+                Assert(stale.IsDisposed && fresh.Writes.SequenceEqual(new[] { 25 }), "Expected the retry to use the rescanned monitor.");
+            }
+        }
+
+        private static void UnknownAndUnsupportedMonitorsAreRejected()
+        {
+            var unsupported = new FakeMonitor("cccc0003", "Old Monitor") { Supported = false };
+            using (var registry = CreateRegistry(unsupported))
+            {
+                Assert(registry.SetBrightness("ffffffff", 50) == BrightnessWriteStatus.NotFound, "Expected unknown id to be reported.");
+                Assert(registry.SetBrightness("cccc0003", 50) == BrightnessWriteStatus.NotSupported, "Expected unsupported monitor to be reported.");
+                Assert(unsupported.Writes.Count == 0, "Expected no write to an unsupported monitor.");
+                Assert(!registry.GetMonitors(false)[0].Supported, "Expected unsupported flag in the listing.");
+            }
+        }
+
+        private static void ConcurrentWritesKeepLatestValue()
+        {
+            var entered = new ManualResetEventSlim();
+            var release = new ManualResetEventSlim();
+            var monitor = new FakeMonitor("aaaa0001", "External A")
+            {
+                OnSet = value =>
+                {
+                    if (value == 10)
+                    {
+                        entered.Set();
+                        release.Wait();
+                    }
+                    return true;
+                }
+            };
+
+            using (var registry = CreateRegistry(monitor))
+            {
+                Task<BrightnessWriteStatus> first = Task.Run(() => registry.SetBrightness("aaaa0001", 10));
+                Assert(entered.Wait(5000), "Expected first write to start.");
+
+                Assert(registry.SetBrightness("aaaa0001", 20) == BrightnessWriteStatus.Queued, "Expected second write to be queued.");
+                Assert(registry.SetBrightness("aaaa0001", 30) == BrightnessWriteStatus.Queued, "Expected third write to be queued.");
+                release.Set();
+
+                Assert(first.Wait(5000) && first.Result == BrightnessWriteStatus.Applied, "Expected the writer to finish.");
+                Assert(monitor.Writes.SequenceEqual(new[] { 10, 30 }), "Expected intermediate value to be skipped, got " + string.Join(",", monitor.Writes));
+            }
+        }
+
+        private static void WebServerSetsBrightnessById()
+        {
+            var a = new FakeMonitor("aaaa0001", "External A");
+            var b = new FakeMonitor("bbbb0002", "External B");
+            using (var server = new TestServer(CreateRegistry(a, b)))
+            {
+                server.Send("POST", "/api/login", "token=" + Uri.EscapeDataString(TestServer.Token));
+
+                Assert(server.Send("GET", "/api/displays").StatusCode == HttpStatusCode.OK, "Expected display listing to succeed.");
+                Assert(server.LastBody.Contains("\"id\":\"bbbb0002\"") && server.LastBody.Contains("\"supported\":true"), "Expected listing JSON with ids, got " + server.LastBody);
+
+                Assert(server.Send("POST", "/api/displays/bbbb0002/brightness", "value=45").StatusCode == HttpStatusCode.OK, "Expected brightness write to succeed.");
+                Assert(b.Writes.SequenceEqual(new[] { 45 }) && a.Writes.Count == 0, "Expected only display B to change.");
+
+                Assert(server.Send("POST", "/api/displays/ffffffff/brightness", "value=45").StatusCode == HttpStatusCode.NotFound, "Expected unknown display to return 404.");
+                Assert(server.Send("POST", "/api/displays/bbbb0002/brightness", "value=101").StatusCode == HttpStatusCode.BadRequest, "Expected out-of-range value to return 400.");
+                Assert(server.Send("GET", "/api/displays/bbbb0002/brightness").StatusCode == HttpStatusCode.MethodNotAllowed, "Expected GET brightness change to be rejected.");
+                Assert(server.Send("POST", "/api/displays/rescan").StatusCode == HttpStatusCode.OK, "Expected rescan to succeed.");
+            }
+        }
+
+        private static MonitorRegistry CreateRegistry(params FakeMonitor[] monitors)
+        {
+            var registry = new MonitorRegistry(new FakeEnumerator(monitors.Cast<IMonitorDevice>().ToArray()));
+            registry.Rescan();
+            return registry;
         }
 
         private static void LoginAcceptsOnlyCorrectToken()
@@ -247,18 +355,23 @@ namespace PCDeviceManage.Tests
             public const string Token = "integration-token";
 
             private readonly LocalWebServer _server;
+            private readonly MonitorRegistry _registry;
             private readonly CookieContainer _cookies = new CookieContainer();
             private readonly int _port;
 
-            public TestServer()
+            public string LastBody { get; private set; }
+
+            public TestServer(MonitorRegistry registry = null)
             {
+                _registry = registry ?? CreateRegistry(new FakeMonitor("aaaa0001", "Test Panel"));
+
                 var listener = new TcpListener(IPAddress.Loopback, 0);
                 listener.Start();
                 _port = ((IPEndPoint)listener.LocalEndpoint).Port;
                 listener.Stop();
 
                 _server = new LocalWebServer(
-                    new DisplayManage(new DisplayDeviceCache(new FakeDisplayDeviceProvider())),
+                    _registry,
                     new AudioManage(),
                     new WindowsManage(),
                     new TokenAuthenticator(Token),
@@ -300,23 +413,28 @@ namespace PCDeviceManage.Tests
                     request.ContentLength = 0;
                 }
 
+                HttpWebResponse response;
                 try
                 {
-                    var response = (HttpWebResponse)request.GetResponse();
-                    response.Close();
-                    return response;
+                    response = (HttpWebResponse)request.GetResponse();
                 }
                 catch (WebException ex) when (ex.Response is HttpWebResponse)
                 {
-                    var response = (HttpWebResponse)ex.Response;
-                    response.Close();
-                    return response;
+                    response = (HttpWebResponse)ex.Response;
                 }
+
+                using (var reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
+                {
+                    LastBody = reader.ReadToEnd();
+                }
+                response.Close();
+                return response;
             }
 
             public void Dispose()
             {
                 _server.Dispose();
+                _registry.Dispose();
             }
         }
 
@@ -328,30 +446,66 @@ namespace PCDeviceManage.Tests
             }
         }
 
-        private sealed class FakeDisplayDeviceProvider : IDisplayDeviceProvider
+        private sealed class FakeMonitor : IMonitorDevice
         {
-            private int _brightness;
-
-            public int CallCount { get; private set; }
-
-            public void SetBrightness(int brightness)
+            public FakeMonitor(string id, string name)
             {
-                _brightness = brightness;
+                Id = id;
+                Name = name;
             }
 
-            public List<DisplayInfoGet.DeviceItemPlus> GetDisplayListAndBrightness()
+            public string Id { get; }
+            public string Name { get; }
+            public bool IsInternal => false;
+            public bool Supported { get; set; } = true;
+            public bool IsBrightnessSupported => Supported;
+            public int Brightness { get; private set; } = -1;
+            public int HardwareBrightness { get; set; } = 50;
+            public int RefreshCount { get; private set; }
+            public bool IsDisposed { get; private set; }
+            public List<int> Writes { get; } = new List<int>();
+            public Func<int, bool> OnSet { get; set; }
+
+            public void RefreshBrightness()
             {
-                CallCount++;
-                return new List<DisplayInfoGet.DeviceItemPlus>
+                RefreshCount++;
+                Brightness = HardwareBrightness;
+            }
+
+            public bool TrySetBrightness(int brightness)
+            {
+                if (IsDisposed || (OnSet != null && !OnSet(brightness)))
                 {
-                    new DisplayInfoGet.DeviceItemPlus(
-                        new DisplayContext.DeviceItem("DISPLAY\\TEST", "Test Panel", 1, 0),
-                        "Test Panel",
-                        true)
-                    {
-                        Brightness = _brightness
-                    }
-                };
+                    return false;
+                }
+                Writes.Add(brightness);
+                Brightness = brightness;
+                return true;
+            }
+
+            public void Dispose()
+            {
+                IsDisposed = true;
+            }
+        }
+
+        /// <summary>依次返回给定的显示器列表，用完后重复最后一组。</summary>
+        private sealed class FakeEnumerator : IMonitorEnumerator
+        {
+            private readonly IMonitorDevice[][] _scans;
+
+            public FakeEnumerator(params IMonitorDevice[][] scans)
+            {
+                _scans = scans;
+            }
+
+            public int Calls { get; private set; }
+
+            public List<IMonitorDevice> Enumerate()
+            {
+                IMonitorDevice[] scan = _scans[Math.Min(Calls, _scans.Length - 1)];
+                Calls++;
+                return scan.ToList();
             }
         }
     }

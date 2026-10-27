@@ -1,4 +1,5 @@
 using log4net;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -12,7 +13,7 @@ namespace PCDeviceManage
 {
     public sealed class LocalWebServer : IDisposable
     {
-        private readonly DisplayManage _displayManage;
+        private readonly MonitorRegistry _monitorRegistry;
         private readonly AudioManage _audioManage;
         private readonly WindowsManage _windowsManage;
         private readonly TokenAuthenticator _authenticator;
@@ -27,7 +28,7 @@ namespace PCDeviceManage
         {
             "/api/login",
             "/api/logout",
-            "/home/setbrightness",
+            "/api/displays/rescan",
             "/home/setvolume",
             "/home/lockwindows",
             "/home/windowsshutdown",
@@ -41,7 +42,7 @@ namespace PCDeviceManage
         private static int _elapsedSeconds;
 
         public LocalWebServer(
-            DisplayManage displayManage,
+            MonitorRegistry monitorRegistry,
             AudioManage audioManage,
             WindowsManage windowsManage,
             TokenAuthenticator authenticator,
@@ -49,7 +50,7 @@ namespace PCDeviceManage
             string host,
             ILog log)
         {
-            _displayManage = displayManage;
+            _monitorRegistry = monitorRegistry ?? throw new ArgumentNullException(nameof(monitorRegistry));
             _audioManage = audioManage;
             _windowsManage = windowsManage;
             _authenticator = authenticator ?? throw new ArgumentNullException(nameof(authenticator));
@@ -149,7 +150,7 @@ namespace PCDeviceManage
                     return;
                 }
 
-                if (PostOnlyPaths.Contains(path) && !IsAllowedPost(context))
+                if (IsPostOnly(path) && !IsAllowedPost(context))
                 {
                     return;
                 }
@@ -189,13 +190,20 @@ namespace PCDeviceManage
                     return;
                 }
 
+                if (IsDisplayBrightnessPath(path))
+                {
+                    SetBrightness(context, path.Substring(DisplaysPrefix.Length, path.Length - DisplaysPrefix.Length - BrightnessSuffix.Length));
+                    return;
+                }
+
                 switch (path)
                 {
-                    case "/home/getdisplaydeviceinfo":
-                        WriteText(context.Response, _displayManage.GetDisplayList());
+                    case "/api/displays":
+                        WriteJson(context.Response, _monitorRegistry.GetMonitors(context.Request.QueryString["refresh"] == "true"));
                         break;
-                    case "/home/setbrightness":
-                        WriteText(context.Response, SetBrightness(ReadParameters(context.Request)).ToString());
+                    case "/api/displays/rescan":
+                        _monitorRegistry.Rescan();
+                        WriteJson(context.Response, _monitorRegistry.GetMonitors(false));
                         break;
                     case "/home/getvolume":
                         WriteText(context.Response, _audioManage.GetVolume().ToString());
@@ -245,6 +253,21 @@ namespace PCDeviceManage
             // 供脚本、快捷指令等不方便处理 Cookie 的客户端使用，失败同样计入锁定次数。
             string headerToken = request.Headers[TokenAuthenticator.TokenHeaderName];
             return !string.IsNullOrEmpty(headerToken) && _authenticator.TryLogin(headerToken).Status == LoginStatus.Succeeded;
+        }
+
+        private const string DisplaysPrefix = "/api/displays/";
+        private const string BrightnessSuffix = "/brightness";
+
+        private static bool IsDisplayBrightnessPath(string path)
+        {
+            return path.StartsWith(DisplaysPrefix, StringComparison.Ordinal) &&
+                path.EndsWith(BrightnessSuffix, StringComparison.Ordinal) &&
+                path.Length > DisplaysPrefix.Length + BrightnessSuffix.Length;
+        }
+
+        private static bool IsPostOnly(string path)
+        {
+            return PostOnlyPaths.Contains(path) || IsDisplayBrightnessPath(path);
         }
 
         private bool IsAllowedPost(HttpListenerContext context)
@@ -352,19 +375,36 @@ namespace PCDeviceManage
             return form;
         }
 
-        private bool SetBrightness(NameValueCollection parameters)
+        private void SetBrightness(HttpListenerContext context, string id)
         {
             int brightness;
-            bool isInternal;
-            if (!int.TryParse(parameters["brightness"], out brightness))
+            if (!int.TryParse(ReadParameters(context.Request)["value"], out brightness) || brightness < 0 || brightness > 100)
             {
-                brightness = 0;
+                context.Response.StatusCode = 400;
+                WriteText(context.Response, "Brightness must be an integer within 0 to 100.");
+                return;
             }
-            if (!bool.TryParse(parameters["IsInternal"], out isInternal))
+
+            BrightnessWriteStatus status = _monitorRegistry.SetBrightness(id, brightness);
+            switch (status)
             {
-                isInternal = false;
+                case BrightnessWriteStatus.Applied:
+                case BrightnessWriteStatus.Queued:
+                    WriteText(context.Response, "true");
+                    break;
+                case BrightnessWriteStatus.NotFound:
+                    context.Response.StatusCode = 404;
+                    WriteText(context.Response, "Display not found");
+                    break;
+                case BrightnessWriteStatus.NotSupported:
+                    context.Response.StatusCode = 409;
+                    WriteText(context.Response, "Display does not support brightness control");
+                    break;
+                default:
+                    context.Response.StatusCode = 500;
+                    WriteText(context.Response, "false");
+                    break;
             }
-            return _displayManage.SetDisplayBrightness(brightness, isInternal);
         }
 
         private bool SetVolume(NameValueCollection parameters)
@@ -452,6 +492,11 @@ namespace PCDeviceManage
         private static void WriteHtml(HttpListenerResponse response, string content)
         {
             Write(response, content, "text/html; charset=utf-8");
+        }
+
+        private static void WriteJson(HttpListenerResponse response, object value)
+        {
+            Write(response, JsonConvert.SerializeObject(value), "application/json; charset=utf-8");
         }
 
         private static void WriteText(HttpListenerResponse response, string content)

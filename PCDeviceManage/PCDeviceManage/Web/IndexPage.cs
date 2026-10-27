@@ -101,6 +101,26 @@ namespace PCDeviceManage
             font-weight: 600;
         }
 
+        .section-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .section-head h2 { margin: 0; }
+
+        button.link {
+            height: auto;
+            padding: 0;
+            color: var(--accent);
+            border: none;
+            background: none;
+            font-size: 13px;
+        }
+
+        input[type=""range""]:disabled { opacity: 0.4; }
+
         .row + .row {
             margin-top: 14px;
             padding-top: 14px;
@@ -238,7 +258,10 @@ namespace PCDeviceManage
         </header>
 
         <section>
-            <h2>&#x663E;&#x793A;&#x5668;&#x4EAE;&#x5EA6;</h2>
+            <div class=""section-head"">
+                <h2>&#x663E;&#x793A;&#x5668;&#x4EAE;&#x5EA6;</h2>
+                <button class=""link"" id=""rescanDisplays"">&#x91CD;&#x65B0;&#x68C0;&#x6D4B;</button>
+            </div>
             <div id=""displayList"">
                 <div class=""empty"">&#x6B63;&#x5728;&#x8BFB;&#x53D6;&#x663E;&#x793A;&#x5668;&#x4FE1;&#x606F;&#x2026;</div>
             </div>
@@ -346,7 +369,7 @@ namespace PCDeviceManage
             return Math.max(0, Math.min(100, parsed));
         }
 
-        function createSlider(initial, label, onChange) {
+        function createSlider(initial, label, onChange, disabled) {
             const wrap = document.createElement(""div"");
             wrap.className = ""slider"";
             const range = document.createElement(""input"");
@@ -354,10 +377,11 @@ namespace PCDeviceManage
             range.min = ""0"";
             range.max = ""100"";
             range.value = clamp(initial);
+            range.disabled = !!disabled;
             range.setAttribute(""aria-label"", label);
             const value = document.createElement(""span"");
             value.className = ""value"";
-            value.textContent = range.value + ""%"";
+            value.textContent = initial < 0 ? ""--"" : range.value + ""%"";
             const sendThrottled = throttle(onChange, 150);
             range.addEventListener(""input"", () => {
                 value.textContent = range.value + ""%"";
@@ -376,7 +400,7 @@ namespace PCDeviceManage
             }
 
             items.forEach((item, index) => {
-                const name = item.AlternateDescription || item.Description || (""\u663E\u793A\u5668 "" + (index + 1));
+                const name = item.name || (""\u663E\u793A\u5668 "" + (index + 1));
                 const row = document.createElement(""div"");
                 row.className = ""row"";
 
@@ -386,23 +410,28 @@ namespace PCDeviceManage
                 title.textContent = name;
                 const tag = document.createElement(""span"");
                 tag.className = ""tag"";
-                tag.textContent = item.IsInternal ? ""\u5185\u7F6E"" : ""\u5916\u63A5"";
+                tag.textContent = (item.isInternal ? ""\u5185\u7F6E"" : ""\u5916\u63A5"") + (item.supported ? """" : "" \u00B7 \u4E0D\u652F\u6301\u8C03\u8282"");
                 label.appendChild(title);
                 label.appendChild(tag);
 
                 row.appendChild(label);
-                row.appendChild(createSlider(item.Brightness, name + "" \u4EAE\u5EA6"", value =>
-                    post(""/Home/SetBrightness"", { brightness: value, IsInternal: item.IsInternal }).catch(() => {})));
+                row.appendChild(createSlider(item.brightness, name + "" \u4EAE\u5EA6"", value =>
+                    post(""/api/displays/"" + encodeURIComponent(item.id) + ""/brightness"", { value: value }).catch(() => {}), !item.supported));
                 displayList.appendChild(row);
             });
         }
 
-        function loadDisplays() {
-            return send(""/Home/GetDisplayDeviceInfo"").then(data => {
-                renderDisplays(!data || data === ""error"" ? [] : JSON.parse(data));
+        function loadDisplays(request) {
+            return (request || send(""/api/displays?refresh=true"")).then(data => {
+                renderDisplays(data ? JSON.parse(data) : []);
             }).catch(() => {
                 displayList.innerHTML = ""<div class='empty'>\u8BFB\u53D6\u663E\u793A\u5668\u4FE1\u606F\u5931\u8D25</div>"";
             });
+        }
+
+        function rescanDisplays() {
+            displayList.innerHTML = ""<div class='empty'>\u6B63\u5728\u91CD\u65B0\u68C0\u6D4B\u2026</div>"";
+            return loadDisplays(post(""/api/displays/rescan""));
         }
 
         function loadVolume() {
@@ -485,6 +514,7 @@ namespace PCDeviceManage
             if (event.key === ""Enter"") $(""applyShutdown"").click();
         });
         $(""cancelShutdown"").addEventListener(""click"", () => applyShutdown(0));
+        $(""rescanDisplays"").addEventListener(""click"", rescanDisplays);
         $(""lockWindows"").addEventListener(""click"", () => post(""/Home/LockWindows"").catch(() => {}));
         $(""shutdownNow"").addEventListener(""click"", () => confirmed(""\u786E\u5B9A\u7ACB\u5373\u5173\u673A\uFF1F"", ""/Home/WindowsShutdown""));
         $(""restartNow"").addEventListener(""click"", () => confirmed(""\u786E\u5B9A\u7ACB\u5373\u91CD\u542F\uFF1F"", ""/Home/WindowsRestart""));

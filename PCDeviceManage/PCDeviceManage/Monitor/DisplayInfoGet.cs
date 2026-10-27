@@ -12,7 +12,6 @@ namespace PCDeviceManage
 		//日志方法调用
 		private static ILog _log = LogManager.GetLogger("DisplayInfoGet");
 
-		public static SafePhysicalMonitorHandle _handle;
 		public class DeviceItemPlus
 		{
 			private readonly DisplayContext.DeviceItem _deviceItem;
@@ -23,8 +22,6 @@ namespace PCDeviceManage
 			public byte DisplayIndex => _deviceItem.DisplayIndex;
 			public byte MonitorIndex => _deviceItem.MonitorIndex;
 			public bool IsInternal { get; }
-
-			public int Brightness { get; set; }
 
 			public DeviceItemPlus(
 				DisplayContext.DeviceItem deviceItem,
@@ -79,114 +76,6 @@ namespace PCDeviceManage
 
 			return Enumerate().Where(x => !string.IsNullOrWhiteSpace(x.AlternateDescription)).ToList();
 		}
-
-		public List<DeviceItemPlus> GetDisplayListAndBrightness() 
-		{
-			var deviceItemPlusList = GetDisplayList();
-			_log.Info("GetDisplayList()获取到显示器数量：" + deviceItemPlusList.Count());
-			int internalBrightness = deviceItemPlusList.Any(x => x.IsInternal)
-				? PowerManagement.GetActiveSchemeBrightness()
-				: 0;
-			Dictionary<string, int> externalBrightnessMap = deviceItemPlusList.Any(x => !x.IsInternal)
-				? GetExternalDisplayBrightnessMap(deviceItemPlusList)
-				: new Dictionary<string, int>();
-
-			foreach (var item in deviceItemPlusList)
-            {
-                if (item.IsInternal)
-                {
-					item.Brightness = internalBrightness;
-                }
-                else
-                {
-					//var temp = new DdcMonitorItem();
-					//temp.UpdateBrightness();
-					int externalBrightness;
-					item.Brightness = externalBrightnessMap.TryGetValue(GetMonitorKey(item), out externalBrightness)
-						? externalBrightness
-						: 0;
-				}
-
-
-			}
-			return deviceItemPlusList;
-		}
-
-
-
-		private Dictionary<string, int> GetExternalDisplayBrightnessMap(List<DeviceItemPlus> deviceItemPlusList) 
-		{
-			var brightnessMap = new Dictionary<string, int>();
-			var handleItems = temp.GetMonitorHandles();
-			foreach (var handleItem in handleItems)
-			{
-				foreach (var physicalItem in MonitorConfiguration.EnumeratePhysicalMonitors(handleItem.MonitorHandle))
-				{
-					int index = -1;
-					if (physicalItem.Capability.IsBrightnessSupported )
-					{
-						index = deviceItemPlusList.FindIndex(x =>
-							!x.IsInternal &&
-							(x.DisplayIndex == handleItem.DisplayIndex) &&
-							(x.MonitorIndex == physicalItem.MonitorIndex) &&
-							string.Equals(x.Description, physicalItem.Description, StringComparison.OrdinalIgnoreCase));
-					}
-					if (index < 0)
-					{
-						physicalItem.Handle.Dispose();
-						continue;
-					}
-
-                    if (deviceItemPlusList[index].IsInternal)
-                    {
-						physicalItem.Handle.Dispose();
-						continue;
-                    }
-					var deviceItem = deviceItemPlusList[index];
-
-					MonitorCapability capability = null;
-					if (physicalItem.Capability.IsBrightnessSupported)
-					{
-						capability = physicalItem.Capability;
-					}
-					//else if (_preclearedIds.Value.Contains(deviceItem.DeviceInstanceId))
-					//{
-					//	capability = MonitorCapability.PreclearedCapability;
-					//}
-					else
-					{
-						physicalItem.Handle.Dispose();
-						continue;
-					}
-
-					_handle= physicalItem.Handle;
-
-					DdcMonitorItem ddcMonitorItem = new DdcMonitorItem(deviceInstanceId: deviceItem.DeviceInstanceId,
-						description: deviceItem.AlternateDescription,
-						displayIndex: deviceItem.DisplayIndex,
-						monitorIndex: deviceItem.MonitorIndex,
-						monitorRect: handleItem.MonitorRect,
-						handle: physicalItem.Handle,
-						capability: capability);
-					ddcMonitorItem.UpdateBrightness();
-					brightnessMap[GetMonitorKey(deviceItem)] = ddcMonitorItem.Brightness;
-
-				}
-			}
-			return brightnessMap;
-		}
-
-		private static string GetMonitorKey(DeviceItemPlus deviceItem)
-		{
-			return GetMonitorKey(deviceItem.DisplayIndex, deviceItem.MonitorIndex, deviceItem.Description);
-		}
-
-		private static string GetMonitorKey(byte displayIndex, byte monitorIndex, string description)
-		{
-			return displayIndex + "|" + monitorIndex + "|" + (description ?? string.Empty).ToUpperInvariant();
-		}
-
-
 	}
 	
 }

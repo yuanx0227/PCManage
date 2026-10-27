@@ -284,7 +284,7 @@ namespace PCDeviceManage
 			return (int)valueIndex;
 		}
 
-		public static bool SetActiveSchemeBrightness(int brightness, bool IsInternal)
+		public static bool SetActiveSchemeBrightness(int brightness)
 		{
 			if (brightness  < 0 || brightness > 100)
 				throw new ArgumentOutOfRangeException(nameof(brightness), brightness, "The brightness must be within 0 to 100.");
@@ -295,7 +295,7 @@ namespace PCDeviceManage
 
 			var schemeGuid = GetActiveScheme();
 
-			if (IsInternal)
+			if (isOnline.Value)
 			{
 				if (PowerWriteACValueIndex(
 					IntPtr.Zero,
@@ -304,33 +304,29 @@ namespace PCDeviceManage
 					DEVICE_POWER_POLICY_VIDEO_BRIGHTNESS,
 					(uint)brightness) != ERROR_SUCCESS)
 				{
-					//Debug.WriteLine("Failed to write AC Brightness.");
+					_log.Warn("Failed to write AC brightness.");
 					return false;
 				}
 			}
 			else
 			{
-				MonitorConfiguration.SetMonitorBrightness(
-				DisplayInfoGet._handle,
-				 (uint)brightness);
-
-				//if (PowerWriteDCValueIndex(
-				//	IntPtr.Zero,
-				//	schemeGuid,
-				//	VIDEO_SUBGROUP,
-				//	DEVICE_POWER_POLICY_VIDEO_BRIGHTNESS,
-				//	(uint)brightness) != ERROR_SUCCESS)
-				//{
-				//	//Debug.WriteLine("Failed to write DC Brightness");
-				//	return false;
-				//}
+				if (PowerWriteDCValueIndex(
+					IntPtr.Zero,
+					schemeGuid,
+					VIDEO_SUBGROUP,
+					DEVICE_POWER_POLICY_VIDEO_BRIGHTNESS,
+					(uint)brightness) != ERROR_SUCCESS)
+				{
+					_log.Warn("Failed to write DC brightness.");
+					return false;
+				}
 			}
 
 			if (PowerSetActiveScheme(
 				IntPtr.Zero,
 				schemeGuid) != ERROR_SUCCESS)
 			{
-				//Debug.WriteLine("Failed to set active scheme.");
+				_log.Warn("Failed to set active power scheme.");
 				return false;
 			}
 			return true;
