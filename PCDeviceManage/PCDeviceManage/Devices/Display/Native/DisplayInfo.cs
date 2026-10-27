@@ -40,25 +40,20 @@ namespace PCDeviceManage.Devices.Display.Native
 			[DataMember(Order = 3)]
 			public string ConnectionDescription { get; }
 
-			[DataMember(Order = 4)]
-			public float PhysicalSize { get; }
-
 			public DisplayItem(DisplayInformation.DisplayItem item)
 			{
 				this.DeviceInstanceId = item.DeviceInstanceId;
 				this.DisplayName = item.DisplayName;
 				this.IsInternal = item.IsInternal;
 				this.ConnectionDescription = item.ConnectionDescription;
-				this.PhysicalSize = item.PhysicalSize;
 			}
 		}
 
 		public static DisplayItem[] GetDisplayMonitorsAsync()
 		{
-			var temp= DisplayInformation.GetDisplayMonitorsAsync()
-				.ContinueWith(task => task.Result.Select(x => new DisplayItem(x)).ToArray()).Result;
+			var temp = DisplayInformation.GetDisplayMonitors().Select(x => new DisplayItem(x)).ToArray();
 
-			_log.Info("DisplayInformation.GetDisplayMonitorsAsync() 获取到设备数量："+ temp.Length);
+			_log.Info("DisplayInformation.GetDisplayMonitors() 获取到设备数量：" + temp.Length);
 
 			return temp;
 		}

@@ -3,8 +3,8 @@
     发布 PC控制（PCDeviceManage）为单文件 exe。
 
 .DESCRIPTION
-    默认发布为自包含（self-contained）的 win-x64 单文件，目标机器不需要安装 .NET 运行时；
-    加 -FrameworkDependent 则只有几 MB，但目标机器需要安装 .NET 8 桌面运行时和 ASP.NET Core 运行时。
+    默认发布为自包含（self-contained）的 win-x64 单文件（约 80 MB），目标机器不需要安装 .NET 运行时；
+    加 -FrameworkDependent 则只有约 1.5 MB，但目标机器需要安装 .NET 8 桌面运行时和 ASP.NET Core 运行时。
     log4net.config 和 frp 目录会放在 exe 旁边。
 
 .EXAMPLE

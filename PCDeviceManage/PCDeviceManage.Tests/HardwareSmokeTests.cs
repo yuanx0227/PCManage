@@ -37,6 +37,16 @@ namespace PCDeviceManage.Tests
         }
 
         [Fact]
+        public void QueryDisplayConfigReturnsActiveDisplays()
+        {
+            foreach (var item in PCDeviceManage.Devices.Display.Native.DisplayInformation.GetDisplayMonitors())
+            {
+                _output.WriteLine("{0} | {1} | internal={2} | {3}", item.DeviceInstanceId, item.DisplayName, item.IsInternal, item.ConnectionDescription);
+                Assert.StartsWith("DISPLAY\\", item.DeviceInstanceId, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        [Fact]
         public void AudioServiceReadsVolume()
         {
             try

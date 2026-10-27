@@ -1,171 +1,262 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Windows.Devices.Display;
-using Windows.Devices.Enumeration;
-using Windows.Foundation;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
 
 namespace PCDeviceManage.Devices.Display.Native
 {
 	/// <summary>
-	/// A wrapper class of <see cref="Windows.Devices.Display.DisplayMonitor"/>
+	/// 通过 Win32 QueryDisplayConfig 获取显示器的友好名称和连接方式（是否内置屏）。
+	/// 取代原来基于 WinRT DisplayMonitor 的实现，不再需要 Windows SDK 投影库。
 	/// </summary>
-	/// <remarks>
-	/// <see cref="Windows.Devices.Display.DisplayMonitor"/> is only available
-	/// on Windows 10 (version 10.0.17134.0) or newer.
-	/// </remarks>
-	public class DisplayInformation
+	public static class DisplayInformation
 	{
-		#region Type
-
-		/// <summary>
-		/// Display monitor information
-		/// </summary>
 		public class DisplayItem
 		{
-			/// <summary>
-			/// Device ID (Not device interface ID)
-			/// </summary>
+			/// <summary>Device ID (Not device interface ID)</summary>
 			public string DeviceInstanceId { get; }
 
-			/// <summary>
-			/// Display name
-			/// </summary>
 			public string DisplayName { get; }
 
-			/// <summary>
-			/// Whether the display is connected internally
-			/// </summary>
+			/// <summary>Whether the display is connected internally</summary>
 			public bool IsInternal { get; }
 
-			/// <summary>
-			/// Connection description
-			/// </summary>
 			public string ConnectionDescription { get; }
 
-			/// <summary>
-			/// Physical size (diagonal) in inches
-			/// </summary>
-			public float PhysicalSize { get; }
-
-			internal DisplayItem(
-				string deviceInstanceId,
-				string displayName,
-				bool isInternal,
-				string connectionDescription = null,
-				float physicalSize = 0F)
+			internal DisplayItem(string deviceInstanceId, string displayName, bool isInternal, string connectionDescription)
 			{
 				this.DeviceInstanceId = deviceInstanceId;
 				this.DisplayName = displayName;
 				this.IsInternal = isInternal;
 				this.ConnectionDescription = connectionDescription;
-				this.PhysicalSize = physicalSize;
 			}
 		}
+
+		#region Win32
+
+		[DllImport("User32.dll")]
+		private static extern int GetDisplayConfigBufferSizes(
+			uint flags,
+			out uint numPathArrayElements,
+			out uint numModeInfoArrayElements);
+
+		[DllImport("User32.dll")]
+		private static extern int QueryDisplayConfig(
+			uint flags,
+			ref uint numPathArrayElements,
+			[Out] DISPLAYCONFIG_PATH_INFO[] pathArray,
+			ref uint numModeInfoArrayElements,
+			[Out] DISPLAYCONFIG_MODE_INFO[] modeInfoArray,
+			IntPtr currentTopologyId);
+
+		[DllImport("User32.dll")]
+		private static extern int DisplayConfigGetDeviceInfo(
+			ref DISPLAYCONFIG_TARGET_DEVICE_NAME requestPacket);
+
+		[StructLayout(LayoutKind.Sequential)]
+		private struct LUID
+		{
+			public uint LowPart;
+			public int HighPart;
+		}
+
+		[StructLayout(LayoutKind.Sequential)]
+		private struct DISPLAYCONFIG_PATH_SOURCE_INFO
+		{
+			public LUID adapterId;
+			public uint id;
+			public uint modeInfoIdx;
+			public uint statusFlags;
+		}
+
+		[StructLayout(LayoutKind.Sequential)]
+		private struct DISPLAYCONFIG_PATH_TARGET_INFO
+		{
+			public LUID adapterId;
+			public uint id;
+			public uint modeInfoIdx;
+			public DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY outputTechnology;
+			public uint rotation;
+			public uint scaling;
+			public uint refreshRateNumerator;
+			public uint refreshRateDenominator;
+			public uint scanLineOrdering;
+			public int targetAvailable;
+			public uint statusFlags;
+		}
+
+		[StructLayout(LayoutKind.Sequential)]
+		private struct DISPLAYCONFIG_PATH_INFO
+		{
+			public DISPLAYCONFIG_PATH_SOURCE_INFO sourceInfo;
+			public DISPLAYCONFIG_PATH_TARGET_INFO targetInfo;
+			public uint flags;
+		}
+
+		// 模式信息的内容用不到，只需要大小正确（64 字节：头部 16 字节 + 48 字节的联合体）。
+		[StructLayout(LayoutKind.Sequential)]
+		private struct DISPLAYCONFIG_MODE_INFO
+		{
+			public uint infoType;
+			public uint id;
+			public LUID adapterId;
+			private ulong union0, union1, union2, union3, union4, union5;
+		}
+
+		[StructLayout(LayoutKind.Sequential)]
+		private struct DISPLAYCONFIG_DEVICE_INFO_HEADER
+		{
+			public uint type;
+			public uint size;
+			public LUID adapterId;
+			public uint id;
+		}
+
+		[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+		private struct DISPLAYCONFIG_TARGET_DEVICE_NAME
+		{
+			public DISPLAYCONFIG_DEVICE_INFO_HEADER header;
+			public uint flags;
+			public DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY outputTechnology;
+			public ushort edidManufactureId;
+			public ushort edidProductCodeId;
+			public uint connectorInstance;
+
+			[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
+			public string monitorFriendlyDeviceName;
+
+			[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+			public string monitorDevicePath;
+		}
+
+		private enum DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY : uint
+		{
+			OTHER = 0xFFFFFFFF,
+			HD15 = 0,
+			SVIDEO = 1,
+			COMPOSITE_VIDEO = 2,
+			COMPONENT_VIDEO = 3,
+			DVI = 4,
+			HDMI = 5,
+			LVDS = 6,
+			D_JPN = 8,
+			SDI = 9,
+			DISPLAYPORT_EXTERNAL = 10,
+			DISPLAYPORT_EMBEDDED = 11,
+			UDI_EXTERNAL = 12,
+			UDI_EMBEDDED = 13,
+			SDTVDONGLE = 14,
+			MIRACAST = 15,
+			INDIRECT_WIRED = 16,
+			INDIRECT_VIRTUAL = 17,
+			INTERNAL = 0x80000000
+		}
+
+		private const uint QDC_ONLY_ACTIVE_PATHS = 0x00000002;
+		private const uint DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME = 2;
+		private const int ERROR_SUCCESS = 0;
+		private const int ERROR_INSUFFICIENT_BUFFER = 122;
 
 		#endregion
 
-		// System error code: 0x80070057 = 0x57 = ERROR_INVALID_PARAMETER
-		// Error message: The parameter is incorrect.
-		private const uint ERROR_INVALID_PARAMETER = 0x80070057;
-
-		// System error code: 0x8007001F = 0x1F = ERROR_GEN_FAILURE
-		// Error message: A device attached to the system is not functioning.
-		private const uint ERROR_GEN_FAILURE = 0x8007001F;
-
-		// System error code: 0x8002802B
-		// Error message: Element not found.
-		private const uint TYPE_E_ELEMENTNOTFOUND = 0x8002802B;
-
 		/// <summary>
-		/// Gets display monitor information.
+		/// 枚举当前处于活动状态的显示器。
 		/// </summary>
-		/// <returns>Array of display monitor information</returns>
-		public static async Task<DisplayItem[]> GetDisplayMonitorsAsync()
+		public static DisplayItem[] GetDisplayMonitors()
 		{
-			const string deviceInstanceIdKey = "System.Devices.DeviceInstanceId";
-			//throw new NotImplementedException();
-			try
+			DISPLAYCONFIG_PATH_INFO[] paths = QueryActivePaths();
+			var items = new List<DisplayItem>(paths.Length);
+			var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+			foreach (DISPLAYCONFIG_PATH_INFO path in paths)
 			{
-				var devices = await DeviceInformation.FindAllAsync(DisplayMonitor.GetDeviceSelector(), new[] { deviceInstanceIdKey });
-				if (devices.Count > 0 )
+				var deviceName = new DISPLAYCONFIG_TARGET_DEVICE_NAME();
+				deviceName.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME;
+				deviceName.header.size = (uint)Marshal.SizeOf<DISPLAYCONFIG_TARGET_DEVICE_NAME>();
+				deviceName.header.adapterId = path.targetInfo.adapterId;
+				deviceName.header.id = path.targetInfo.id;
+				if (DisplayConfigGetDeviceInfo(ref deviceName) != ERROR_SUCCESS)
+					continue;
+
+				string deviceInstanceId = DisplayContext.ConvertToDeviceInstanceId(deviceName.monitorDevicePath ?? string.Empty);
+				// 复制模式下同一台显示器会出现在多条路径里。
+				if (string.IsNullOrEmpty(deviceInstanceId) || !seen.Add(deviceInstanceId))
+					continue;
+
+				DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY technology = deviceName.outputTechnology;
+				items.Add(new DisplayItem(
+					deviceInstanceId: deviceInstanceId,
+					displayName: deviceName.monitorFriendlyDeviceName,
+					isInternal: IsInternal(technology),
+					connectionDescription: GetConnectionDescription(technology)));
+			}
+			return items.ToArray();
+		}
+
+		private static DISPLAYCONFIG_PATH_INFO[] QueryActivePaths()
+		{
+			// 两次调用之间显示配置可能变化，缓冲区不够时重试。
+			for (int attempt = 0; attempt < 5; attempt++)
+			{
+				int result = GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, out uint pathCount, out uint modeCount);
+				if (result != ERROR_SUCCESS)
+					throw new Win32Exception(result);
+
+				var paths = new DISPLAYCONFIG_PATH_INFO[pathCount];
+				var modes = new DISPLAYCONFIG_MODE_INFO[modeCount];
+				result = QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, ref pathCount, paths, ref modeCount, modes, IntPtr.Zero);
+				if (result == ERROR_SUCCESS)
 				{
-					var items = new List<DisplayItem>(devices.Count);
-					foreach (var device in devices)
-					{
-						if (!device.Properties.TryGetValue(deviceInstanceIdKey, out object value))
-							continue;
-
-						var deviceInstanceId = value as string;
-						if (string.IsNullOrWhiteSpace(deviceInstanceId))
-							continue;
-
-						var displayMonitor = await DisplayMonitor.FromInterfaceIdAsync(device.Id);
-						//var displayMonitor = await DisplayMonitor.FromIdAsync(deviceInstanceId);
-						if (displayMonitor is null)
-							continue;
-
-						//Debug.WriteLine($"DeviceInstanceId: {deviceInstanceId}");
-						//Debug.WriteLine($"DisplayName: {displayMonitor.DisplayName}");
-						//Debug.WriteLine($"ConnectionKind: {displayMonitor.ConnectionKind}");
-						//Debug.WriteLine($"PhysicalConnector: {displayMonitor.PhysicalConnector}");
-						//Debug.WriteLine($"PhysicalSize: {GetDiagonal(displayMonitor.PhysicalSizeInInches):F1}");
-
-						items.Add(new DisplayItem(
-							deviceInstanceId: deviceInstanceId,
-							displayName: displayMonitor.DisplayName,
-							isInternal: (displayMonitor.ConnectionKind == DisplayMonitorConnectionKind.Internal),
-							connectionDescription: GetConnectionDescription(displayMonitor.ConnectionKind, displayMonitor.PhysicalConnector),
-							physicalSize: GetDiagonal(displayMonitor.PhysicalSizeInInches)));
-					}
-					return items.ToArray();
+					Array.Resize(ref paths, (int)pathCount);
+					return paths;
 				}
+				if (result != ERROR_INSUFFICIENT_BUFFER)
+					throw new Win32Exception(result);
 			}
-			catch (ArgumentException ax) when ((uint)ax.HResult is ERROR_INVALID_PARAMETER)
-			{
-				throw;
-			}
-			catch (Exception ex) when ((uint)ex.HResult == ERROR_GEN_FAILURE || (uint)ex.HResult == TYPE_E_ELEMENTNOTFOUND)
-			{
-				throw;
-			}
-			return Array.Empty<DisplayItem>();
+			throw new Win32Exception(ERROR_INSUFFICIENT_BUFFER);
 		}
 
-		private static string GetConnectionDescription(DisplayMonitorConnectionKind connectionKind, DisplayMonitorPhysicalConnectorKind connectorKind)
+		private static bool IsInternal(DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY technology)
 		{
-			switch (connectionKind)
+			switch (technology)
 			{
-				case DisplayMonitorConnectionKind.Internal:
-				case DisplayMonitorConnectionKind.Virtual:
-				case DisplayMonitorConnectionKind.Wireless:
-					return connectionKind.ToString();
-
-				case DisplayMonitorConnectionKind.Wired:
-					switch (connectorKind)
-					{
-						case DisplayMonitorPhysicalConnectorKind.HD15:
-							return "VGA";
-
-						case DisplayMonitorPhysicalConnectorKind.AnalogTV:
-						case DisplayMonitorPhysicalConnectorKind.DisplayPort:
-							return connectorKind.ToString();
-
-						case DisplayMonitorPhysicalConnectorKind.Dvi:
-						case DisplayMonitorPhysicalConnectorKind.Hdmi:
-						case DisplayMonitorPhysicalConnectorKind.Lvds:
-						case DisplayMonitorPhysicalConnectorKind.Sdi:
-							return connectorKind.ToString().ToUpper();
-					}
-					break;
+				case DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY.INTERNAL:
+				case DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY.DISPLAYPORT_EMBEDDED:
+				case DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY.UDI_EMBEDDED:
+				case DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY.LVDS:
+					return true;
+				default:
+					return false;
 			}
-			return null;
 		}
 
-		private static float GetDiagonal(Size? source) => source.HasValue
-			? (float)Math.Sqrt(Math.Pow(source.Value.Width, 2) + Math.Pow(source.Value.Height, 2))
-			: 0F;
+		private static string GetConnectionDescription(DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY technology)
+		{
+			switch (technology)
+			{
+				case DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY.INTERNAL:
+				case DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY.DISPLAYPORT_EMBEDDED:
+				case DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY.UDI_EMBEDDED:
+					return "Internal";
+				case DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY.HD15:
+					return "VGA";
+				case DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY.DVI:
+					return "DVI";
+				case DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY.HDMI:
+					return "HDMI";
+				case DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY.LVDS:
+					return "LVDS";
+				case DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY.SDI:
+					return "SDI";
+				case DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY.DISPLAYPORT_EXTERNAL:
+					return "DisplayPort";
+				case DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY.MIRACAST:
+					return "Wireless";
+				case DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY.INDIRECT_VIRTUAL:
+					return "Virtual";
+				default:
+					return null;
+			}
+		}
 	}
 }
