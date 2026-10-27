@@ -53,6 +53,16 @@ frpc 由程序直接作为子进程启动：输出写入日志，意外退出后
 ## 开发环境
   .NET Framework 4.6
 
+## 测试
+测试项目 `PCDeviceManage.Tests` 使用 xUnit（net462），可以在 Visual Studio 的测试资源管理器中运行，或者在命令行构建后用 vstest 运行（测试项目为 x86）：
+
+```
+msbuild PCDeviceManage\PCDeviceManage.sln -restore -p:Configuration=Debug
+vstest.console PCDeviceManage\PCDeviceManage.Tests\bin\Debug\net462\PCDeviceManage.Tests.dll /Platform:x86
+```
+
+测试不会真的锁屏、关机或修改开机启动项：关机动作被替换为计数，开机自启只读写 `HKCU\Software\PCManageTests` 下的临时键。
+
 ## 相关项目
    - <a href="https://github.com/emoacht/Monitorian">Monitorian</a>:调节显示器亮度的Windows桌面工具
    - <a href="https://github.com/fatedier/frp">Frp</a>:反向代理工具
